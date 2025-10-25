@@ -1,6 +1,7 @@
+import { showAlert } from '@/src/utils/alert'
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Button, StyleSheet, Text, TextInput, View } from 'react-native'
 import { supabase } from '../../src/services/supabaseClient'
 
 
@@ -33,13 +34,13 @@ export default function RelationConnectScreen() {
   const handleConnect = async () => {
     const [nickname, tag] = childTag.split('#')
     if (!nickname || !tag) {
-      Alert.alert('닉네임#태그 형식으로 입력해주세요')
+      showAlert('닉네임#태그 형식으로 입력해주세요')
       return
     }
 
     const { data: sessionData } = await supabase.auth.getSession()
     if (!sessionData.session) {
-      Alert.alert('로그인이 만료되었습니다. 다시 로그인해주세요.')
+      showAlert('로그인이 만료되었습니다. 다시 로그인해주세요.')
       router.replace('/login')
       return
     }
@@ -48,20 +49,21 @@ export default function RelationConnectScreen() {
     const { data: child, error: childErr } = await supabase
       .rpc('find_child_by_tag' as const, { _nickname: nickname.trim(), _tag: tag.trim() })
       .maybeSingle<ChildResult>()
+    console.log('자녀 조회 :: child = ', child);
 
     if (childErr) {
       console.error('find_child_by_tag error:', childErr)
-      Alert.alert('조회 중 오류가 발생했습니다.')
+      showAlert('조회 중 오류가 발생했습니다.')
       return
     }
 
     if (!child) {
-      Alert.alert('존재하지 않는 자녀입니다.')
+      showAlert('존재하지 않는 자녀입니다.')
       return
     }
 
     if (!profile?.id) {
-      Alert.alert('내 정보가 없습니다. 다시 로그인해주세요.')
+      showAlert('내 정보가 없습니다. 다시 로그인해주세요.')
       return
     }
 
@@ -71,15 +73,16 @@ export default function RelationConnectScreen() {
       .eq('parent_id', profile.id)
       .eq('child_id', child.id)
       .maybeSingle()
+    console.log('부모자녀 연결 조회 :: existing = ', existing);
 
     if (existing) {
-      if (existing.status === 'ACTIVE') return Alert.alert('이미 연결된 자녀입니다.')
-      if (existing.status === 'PENDING') return Alert.alert('이미 요청 대기 중입니다.')
+      if (existing.status === 'ACTIVE') return showAlert('이미 연결된 자녀입니다.')
+      if (existing.status === 'PENDING') return showAlert('이미 요청 대기 중입니다.')
     }
 
     if (relationErr) {
       console.error('relation 조회 error:', childErr)
-      Alert.alert('조회 중 오류가 발생했습니다.')
+      showAlert('조회 중 오류가 발생했습니다.')
       return
     }
 
@@ -91,9 +94,10 @@ export default function RelationConnectScreen() {
 
     if (insertErr) {
       console.error(insertErr)
-      Alert.alert('연결 실패', insertErr.message)
+      showAlert('연결 실패', insertErr.message)
     } else {
-      Alert.alert('연결 요청 완료', '자녀의 승인을 기다려주세요.')
+      console.log('relation insert 성공')
+      showAlert('연결 요청 완료', '자녀의 승인을 기다려주세요.')
     }
   }
 

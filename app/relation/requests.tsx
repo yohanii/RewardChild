@@ -1,5 +1,6 @@
+import { showAlert } from '@/src/utils/alert'
 import { useEffect, useState } from 'react'
-import { Alert, Button, StyleSheet, Text, View } from 'react-native'
+import { Button, StyleSheet, Text, View } from 'react-native'
 import { supabase } from '../../src/services/supabaseClient'
 
 // ✅ 1️⃣ relations + parent users 조합 데이터 타입 정의
@@ -61,8 +62,8 @@ export default function RelationRequestsScreen() {
       .update({ status: 'ACTIVE' })
       .eq('relation_id', relationId)
 
-    if (error) Alert.alert('승인 실패', error.message)
-    else Alert.alert('가족 연결 완료!')
+    if (error) showAlert('승인 실패', error.message)
+    else showAlert('가족 연결 완료!')
   }
 
   if (!profile) return null
