@@ -65,7 +65,7 @@ export default function RelationConnectScreen() {
       return
     }
 
-    const { data: existing } = await supabase
+    const { data: existing, error: relationErr } = await supabase
       .from('relations')
       .select('*')
       .eq('parent_id', profile.id)
@@ -75,6 +75,12 @@ export default function RelationConnectScreen() {
     if (existing) {
       if (existing.status === 'ACTIVE') return Alert.alert('이미 연결된 자녀입니다.')
       if (existing.status === 'PENDING') return Alert.alert('이미 요청 대기 중입니다.')
+    }
+
+    if (relationErr) {
+      console.error('relation 조회 error:', childErr)
+      Alert.alert('조회 중 오류가 발생했습니다.')
+      return
     }
 
     const { error: insertErr } = await supabase.from('relations').insert({
