@@ -1,4 +1,6 @@
+import { useOnRelationActivated } from '@/src/hooks/useOnRelationActivated'
 import { showAlert } from '@/src/utils/alert'
+import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Button, StyleSheet, Text, View } from 'react-native'
 import { supabase } from '../../src/services/supabaseClient'
@@ -34,6 +36,11 @@ const normalizeParent = (
 export default function RelationRequestsScreen() {
   const [profile, setProfile] = useState<{ id: number; nickname: string; tag: string } | null>(null)
   const [requests, setRequests] = useState<RelationRequest[]>([])
+
+  useOnRelationActivated(profile?.id ?? 0, 'CHILD', () => {
+    // 실시간 이벤트로도 이동(중복 방지는 훅 내부에서 처리)
+    router.replace('/home')
+  })
 
   useEffect(() => {
     const loadRequests = async () => {
@@ -87,7 +94,10 @@ export default function RelationRequestsScreen() {
       .eq('id', relationId)
 
     if (error) showAlert('승인 실패', error.message)
-    else showAlert('가족 연결 완료!')
+    else {
+      showAlert('가족 연결 완료!')
+      router.replace('/home')
+    }
   }
 
   if (!profile) return null

@@ -1,22 +1,26 @@
+import { useOnRelationActivated } from '@/src/hooks/useOnRelationActivated'
 import { showAlert } from '@/src/utils/alert'
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native'
 import { supabase } from '../../src/services/supabaseClient'
 
-
-type ChildResult = {
-  id: number
-  nickname: string
-  tag: string
-}
+type ChildResult = { id: number; nickname: string; tag: string }
 
 export default function RelationConnectScreen() {
   const [profile, setProfile] = useState<{ id: number; role: string; nickname: string; tag: string } | null>(null)
   const [childTag, setChildTag] = useState('')
+  const [waitingRelationId, setWaitingRelationId] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
 
+  // ✅ 1. relation이 ACTIVE 되면 자동 이동
+  useOnRelationActivated(profile?.id ?? 0, 'PARENT', () => {
+    router.replace('/home')
+  }, { relationId: waitingRelationId ?? undefined })
+
+  // ✅ 2. 내 프로필 불러오기
   useEffect(() => {
-    const loadProfile = async () => {
+    (async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return router.replace('/login')
 
@@ -27,91 +31,93 @@ export default function RelationConnectScreen() {
         .single()
 
       if (data) setProfile(data)
-    }
-    loadProfile()
+    })()
   }, [])
 
+  // ✅ 3. 부모가 이전 요청(PENDING) 보낸 적 있는지 확인
+  useEffect(() => {
+    (async () => {
+      if (!profile || profile.role !== 'PARENT') return
+
+      const { data, error } = await supabase
+        .from('relations')
+        .select('id,status')
+        .eq('parent_id', profile.id)
+        .in('status', ['PENDING', 'ACTIVE'])
+        .order('id', { ascending: false })
+        .limit(1)
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      const relation = data?.[0]
+      if (!relation) return
+      if (relation.status === 'ACTIVE') router.replace('/home')
+      else setWaitingRelationId(relation.id)
+    })()
+  }, [profile])
+
+  // ✅ 4. 부모가 연결 요청 보내기
   const handleConnect = async () => {
-    const [nickname, tag] = childTag.split('#')
-    if (!nickname || !tag) {
-      showAlert('닉네임#태그 형식으로 입력해주세요')
-      return
-    }
+    if (loading) return
+    const [nickname, tag] = (childTag ?? '').split('#')
+    if (!nickname || !tag) return showAlert('닉네임#태그 형식으로 입력해주세요')
 
-    const { data: sessionData } = await supabase.auth.getSession()
-    if (!sessionData.session) {
-      showAlert('로그인이 만료되었습니다. 다시 로그인해주세요.')
-      router.replace('/login')
-      return
-    }
-
-    // ✅ RPC 결과 타입 지정
+    setLoading(true)
     const { data: child, error: childErr } = await supabase
       .rpc('find_child_by_tag' as const, { _nickname: nickname.trim(), _tag: tag.trim() })
       .maybeSingle<ChildResult>()
-    console.log('자녀 조회 :: child = ', child);
 
-    if (childErr) {
-      console.error('find_child_by_tag error:', childErr)
-      showAlert('조회 중 오류가 발생했습니다.')
-      return
+    if (childErr || !child) {
+      setLoading(false)
+      return showAlert('존재하지 않는 자녀입니다.')
     }
 
-    if (!child) {
-      showAlert('존재하지 않는 자녀입니다.')
-      return
-    }
-
-    if (!profile?.id) {
-      showAlert('내 정보가 없습니다. 다시 로그인해주세요.')
-      return
-    }
-
-    const { data: existing, error: relationErr } = await supabase
+    const { data: existing } = await supabase
       .from('relations')
-      .select('*')
-      .eq('parent_id', profile.id)
+      .select('id,status')
+      .eq('parent_id', profile?.id)
       .eq('child_id', child.id)
       .maybeSingle()
-    console.log('부모자녀 연결 조회 :: existing = ', existing);
 
     if (existing) {
-      if (existing.status === 'ACTIVE') return showAlert('이미 연결된 자녀입니다.')
-      if (existing.status === 'PENDING') return showAlert('이미 요청 대기 중입니다.')
+      if (existing.status === 'ACTIVE') {
+        setLoading(false)
+        return showAlert('이미 연결된 자녀입니다.')
+      }
+      if (existing.status === 'PENDING') {
+        setWaitingRelationId(existing.id)
+        setLoading(false)
+        return showAlert('이미 요청 대기 중입니다.')
+      }
     }
 
-    if (relationErr) {
-      console.error('relation 조회 error:', childErr)
-      showAlert('조회 중 오류가 발생했습니다.')
-      return
-    }
+    const { data: inserted, error } = await supabase
+      .from('relations')
+      .insert({ parent_id: profile?.id, child_id: child.id, status: 'PENDING' })
+      .select('id')
+      .single()
 
-    const { error: insertErr } = await supabase.from('relations').insert({
-      parent_id: profile.id,
-      child_id: child.id,
-      status: 'PENDING',
-    })
+    setLoading(false)
+    if (error) return showAlert('연결 실패', error.message)
 
-    if (insertErr) {
-      console.error(insertErr)
-      showAlert('연결 실패', insertErr.message)
-    } else {
-      console.log('relation insert 성공')
-      showAlert('연결 요청 완료', '자녀의 승인을 기다려주세요.')
-    }
+    setWaitingRelationId(inserted.id)
+    showAlert('연결 요청 완료', '자녀의 승인을 기다려주세요.')
   }
-
 
   if (!profile) return null
 
+  const isParent = profile.role === 'PARENT'
+
   return (
     <View style={styles.container}>
-      {/* 내 식별 태그 항상 표시 */}
       <Text style={styles.myTag}>
         내 코드: {profile.nickname}#{profile.tag}
       </Text>
 
-      {profile.role === 'PARENT' ? (
+      {isParent ? (
         <>
           <Text style={styles.title}>자녀 닉네임#태그를 입력하세요</Text>
           <TextInput
@@ -119,8 +125,15 @@ export default function RelationConnectScreen() {
             value={childTag}
             onChangeText={setChildTag}
             style={styles.input}
+            autoCapitalize="none"
           />
-          <Button title="연결 요청" onPress={handleConnect} />
+          <Button title={loading ? '요청 중...' : '연결 요청'} onPress={handleConnect} disabled={loading} />
+
+          {waitingRelationId && !loading && (
+            <Text style={{ marginTop: 16, textAlign: 'center' }}>
+              요청이 전송되었습니다. 자녀가 수락하면 자동으로 이동합니다.
+            </Text>
+          )}
         </>
       ) : (
         <>
@@ -134,18 +147,7 @@ export default function RelationConnectScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 24 },
-  myTag: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
+  myTag: { fontSize: 18, fontWeight: '600', marginBottom: 24, textAlign: 'center' },
   title: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#aaa',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
+  input: { borderWidth: 1, borderColor: '#aaa', borderRadius: 8, padding: 12, marginBottom: 12 },
 })
