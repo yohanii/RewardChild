@@ -1,13 +1,14 @@
+import { showAlert } from '@/src/utils/alert'
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { Alert, Button, Text, TextInput, View } from 'react-native'
+import { Button, Text, TextInput, View } from 'react-native'
 import { supabase } from '../../src/services/supabaseClient'
 
 export default function NicknameScreen() {
   const [nickname, setNickname] = useState('')
 
   const handleSubmit = async () => {
-    if (!nickname.trim()) return Alert.alert('닉네임을 입력해주세요')
+    if (!nickname.trim()) return showAlert('닉네임을 입력해주세요')
 
     const tag = Math.random().toString(16).substring(2, 6).toUpperCase()
     const { data: { user } } = await supabase.auth.getUser()

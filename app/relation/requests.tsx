@@ -3,25 +3,40 @@ import { useEffect, useState } from 'react'
 import { Button, StyleSheet, Text, View } from 'react-native'
 import { supabase } from '../../src/services/supabaseClient'
 
-// ✅ 1️⃣ relations + parent users 조합 데이터 타입 정의
-interface RelationRequest {
-  relation_id: number
+// Supabase가 내려줄 수 있는 원시 parent 형태: 객체 | 배열 | null
+type RawParent =
+  | { nickname: string; tag: string }
+  | { nickname: string; tag: string }[]
+  | null
+
+type RawRelationRow = {
+  id: number
   parent_id: number
   status: string
-  users: {
-    nickname: string
-    tag: string
-  }[]
+  parent: RawParent
+}
+
+interface RelationRequest {
+  id: number
+  parent_id: number
+  status: string
+  parent: { nickname: string; tag: string } | null
+}
+
+// 배열/객체 케이스 모두 안전하게 정규화
+const normalizeParent = (
+  p: RawParent
+): { nickname: string; tag: string } | null => {
+  if (!p) return null
+  return Array.isArray(p) ? p[0] ?? null : p
 }
 
 export default function RelationRequestsScreen() {
-  // ✅ 2️⃣ useState 제네릭으로 타입 명시
   const [profile, setProfile] = useState<{ id: number; nickname: string; tag: string } | null>(null)
   const [requests, setRequests] = useState<RelationRequest[]>([])
 
   useEffect(() => {
     const loadRequests = async () => {
-      // ✅ 3️⃣ user가 null일 수 있으므로 체크
       const { data: userData } = await supabase.auth.getUser()
       const user = userData?.user
       if (!user) {
@@ -40,17 +55,26 @@ export default function RelationRequestsScreen() {
 
       const { data, error } = await supabase
         .from('relations')
-        .select('relation_id, parent_id, status, users!relations_parent_id_fkey(nickname, tag)')
+        // FK 이름 또는 컬럼명으로 관계 명시: 둘 중 프로젝트에 맞는 쪽 사용
+        .select('id, parent_id, status, parent:users!parent_id(nickname, tag)')
         .eq('child_id', child.id)
         .eq('status', 'PENDING')
+        .returns<RawRelationRow[]>()
 
       if (error) {
         console.error(error)
         return
       }
 
-      // ✅ 4️⃣ 타입 지정된 배열에 data를 안전하게 대입
-      setRequests(data as RelationRequest[])
+      const normalized: RelationRequest[] = (data ?? []).map(r => ({
+        id: r.id,
+        parent_id: r.parent_id,
+        status: r.status,
+        parent: normalizeParent(r.parent),
+      }))
+
+      setRequests(normalized)
+      console.log('requests(normalized) = ', normalized)
     }
 
     loadRequests()
@@ -60,7 +84,7 @@ export default function RelationRequestsScreen() {
     const { error } = await supabase
       .from('relations')
       .update({ status: 'ACTIVE' })
-      .eq('relation_id', relationId)
+      .eq('id', relationId)
 
     if (error) showAlert('승인 실패', error.message)
     else showAlert('가족 연결 완료!')
@@ -79,14 +103,15 @@ export default function RelationRequestsScreen() {
       {requests.length === 0 ? (
         <Text>현재 연결 요청이 없습니다.</Text>
       ) : (
-        requests.map((r) => (
-          <View key={r.relation_id} style={styles.card}>
-            <Text>
-              부모님: {r.users[0].nickname}#{r.users[0].tag}
-            </Text>
-            <Button title="수락" onPress={() => handleApprove(r.relation_id)} />
-          </View>
-        ))
+        requests.map((r) => {
+          const label = r.parent ? `${r.parent.nickname}#${r.parent.tag}` : '알 수 없는 사용자'
+          return (
+            <View key={r.id} style={styles.card}>
+              <Text>부모님: {label}</Text>
+              <Button title="수락" onPress={() => handleApprove(r.id)} />
+            </View>
+          )
+        })
       )}
     </View>
   )
