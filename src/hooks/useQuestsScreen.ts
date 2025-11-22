@@ -6,6 +6,19 @@ import { confirmAsync } from '@/src/utils/confirmAsync'
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 
+export type CreateQuestPayload = {
+  title: string
+  content?: string
+  reward: number
+}
+
+type ActiveRelation = {
+  relation_id: number
+  parent_id: number
+  child_id: number
+  status: string
+}
+
 type BalanceRow = {
   balance: number
 }
@@ -192,6 +205,72 @@ export const useQuestsScreen = () => {
     }
   }
 
+    const createQuest = async (payload: CreateQuestPayload): Promise<boolean> => {
+    if (!profile) {
+      showAlert('오류', '프로필 정보를 찾을 수 없어요.')
+      return false
+    }
+
+    if (profile.role !== 'PARENT') {
+      showAlert('권한 없음', '퀘스트는 부모만 등록할 수 있어요.')
+      return false
+    }
+
+    try {
+      setMutating(true)
+
+      // 1) 활성 관계 찾기 (MVP: 1:1 관계 기준)
+      const { data: relation, error: relationError } = await supabase
+        .from('relations')
+        .select('relation_id, parent_id, child_id, status')
+        .eq('parent_id', profile.id)
+        .eq('status', 'ACTIVE')
+        .maybeSingle<ActiveRelation>()
+
+      if (relationError) {
+        console.warn(relationError)
+        showAlert('오류', '관계 정보를 불러오는 중 문제가 발생했어요.')
+        return false
+      }
+
+      if (!relation) {
+        showAlert('관계 없음', '활성화된 부모-자녀 관계가 없어요.')
+        return false
+      }
+
+      // 2) quests insert
+      const { data, error } = await supabase
+        .from('quests')
+        .insert([
+          {
+            relation_id: relation.relation_id,
+            parent_id: profile.id,
+            child_id: relation.child_id,
+            title: payload.title,
+            content: payload.content ?? null,
+            reward: payload.reward,
+            status: 'REGISTERED',
+          },
+        ])
+        .select('*')
+        .single<Quest>()
+
+      if (error) {
+        console.warn(error)
+        showAlert('등록 실패', '퀘스트를 등록하는 중 오류가 발생했어요.')
+        return false
+      }
+
+      // 3) 상태 업데이트 (새 퀘스트를 맨 위에 추가)
+      setQuests((prev) => (data ? [data, ...prev] : prev))
+
+      return true
+    } finally {
+      setMutating(false)
+    }
+  }
+
+
   return {
     profile,
     balance,
@@ -206,5 +285,6 @@ export const useQuestsScreen = () => {
     childRequestQuest,
     parentApproveQuest,
     getDDayLabel,
+    createQuest,
   }
 }

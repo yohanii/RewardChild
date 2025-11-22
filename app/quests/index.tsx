@@ -1,9 +1,9 @@
 // app/quests/index.tsx
 import { QuestCard } from '@/src/components/quests/QuestCard'
+import { QuestCreateModal } from '@/src/components/quests/QuestCreateModal'
 import { QuestDetailModal } from '@/src/components/quests/QuestDetailModal'
 import { useQuestsScreen } from '@/src/hooks/useQuestsScreen'
-import { router } from 'expo-router'
-import React from 'react'
+import React, { useState } from 'react'
 import {
     ActivityIndicator,
     Pressable,
@@ -28,7 +28,10 @@ export default function QuestsScreen() {
     childRequestQuest,
     parentApproveQuest,
     getDDayLabel,
+    createQuest,
   } = useQuestsScreen()
+
+  const [createVisible, setCreateVisible] = useState(false)
 
   if (loading && !profile) {
     return (
@@ -66,12 +69,12 @@ export default function QuestsScreen() {
         </View>
 
         {profile?.role === 'PARENT' && (
-          <Pressable
-            style={styles.createQuestButton}
-            onPress={() => router.push('/quests/new')}
-          >
-            <Text style={styles.createQuestButtonText}>퀘스트 등록</Text>
-          </Pressable>
+            <Pressable
+                style={styles.createQuestButton}
+                onPress={() => setCreateVisible(true)}
+            >
+                <Text style={styles.createQuestButtonText}>퀘스트 등록</Text>
+            </Pressable>
         )}
       </View>
 
@@ -113,6 +116,13 @@ export default function QuestsScreen() {
         onDelete={selectedQuest ? () => deleteQuest(selectedQuest) : undefined}
         onApprove={selectedQuest ? () => parentApproveQuest(selectedQuest) : undefined}
         onRequest={selectedQuest ? () => childRequestQuest(selectedQuest) : undefined}
+      />
+
+      <QuestCreateModal
+        visible={createVisible}
+        mutating={mutating}
+        onClose={() => setCreateVisible(false)}
+        onSubmit={createQuest}
       />
     </View>
   )
