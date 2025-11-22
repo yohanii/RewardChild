@@ -18,7 +18,7 @@ function ParentHome({ nickname, balance }: { nickname: string; balance: number |
         <Button title="자녀 관리하기" onPress={() => router.push('/relation/requests')} />
       </View>
       <View style={styles.section}>
-        <Button title="퀘스트 등록하기" onPress={() => router.push('/quests/create')} />
+        <Button title="퀘스트 보기" onPress={() => router.push('/quests')} />
       </View>
       <View style={styles.section}>
         <Button title="상점 관리" onPress={() => router.push('/shop/manage')} />
@@ -74,7 +74,6 @@ export default function Home() {
 
       setProfile(data)
 
-      console.log('home :: data = ', data)
       const { data: balanceRow, error: balanceError } = await supabase
         .from('balances')
         .select('balance')
