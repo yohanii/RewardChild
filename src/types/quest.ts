@@ -11,7 +11,7 @@ export type Profile = {
 }
 
 export type Quest = {
-  quest_id: number
+  id: number
   title: string
   content: string | null
   reward: number

@@ -13,7 +13,7 @@ export type CreateQuestPayload = {
 }
 
 type ActiveRelation = {
-  relation_id: number
+  id: number
   parent_id: number
   child_id: number
   status: string
@@ -124,14 +124,14 @@ export const useQuestsScreen = () => {
 
     try {
       setMutating(true)
-      const { error } = await supabase.from('quests').delete().eq('quest_id', quest.quest_id)
+      const { error } = await supabase.from('quests').delete().eq('id', quest.id)
       if (error) {
         console.warn(error)
         showAlert('삭제 실패', '퀘스트를 삭제하는 중 오류가 발생했어요.')
         return
       }
-      setQuests((prev) => prev.filter((q) => q.quest_id !== quest.quest_id))
-      if (selectedQuest?.quest_id === quest.quest_id) {
+      setQuests((prev) => prev.filter((q) => q.id !== quest.id))
+      if (selectedQuest?.id === quest.id) {
         closeQuest()
       }
     } finally {
@@ -151,7 +151,7 @@ export const useQuestsScreen = () => {
       const { error } = await supabase
         .from('quests')
         .update({ status: 'REQUESTED' })
-        .eq('quest_id', quest.quest_id)
+        .eq('id', quest.id)
 
       if (error) {
         console.warn(error)
@@ -159,9 +159,9 @@ export const useQuestsScreen = () => {
         return
       }
       setQuests((prev) =>
-        prev.map((q) => (q.quest_id === quest.quest_id ? { ...q, status: 'REQUESTED' } : q)),
+        prev.map((q) => (q.id === quest.id ? { ...q, status: 'REQUESTED' } : q)),
       )
-      if (selectedQuest?.quest_id === quest.quest_id) {
+      if (selectedQuest?.id === quest.id) {
         setSelectedQuest((prev) => (prev ? { ...prev, status: 'REQUESTED' } : prev))
       }
     } finally {
@@ -182,7 +182,7 @@ export const useQuestsScreen = () => {
       const { error } = await supabase
         .from('quests')
         .update({ status: 'COMPLETED', completed_at: now })
-        .eq('quest_id', quest.quest_id)
+        .eq('id', quest.id)
 
       if (error) {
         console.warn(error)
@@ -192,10 +192,10 @@ export const useQuestsScreen = () => {
 
       setQuests((prev) =>
         prev.map((q) =>
-          q.quest_id === quest.quest_id ? { ...q, status: 'COMPLETED', completed_at: now } : q,
+          q.id === quest.id ? { ...q, status: 'COMPLETED', completed_at: now } : q,
         ),
       )
-      if (selectedQuest?.quest_id === quest.quest_id) {
+      if (selectedQuest?.id === quest.id) {
         setSelectedQuest((prev) =>
           prev ? { ...prev, status: 'COMPLETED', completed_at: now } : prev,
         )
@@ -222,7 +222,7 @@ export const useQuestsScreen = () => {
       // 1) 활성 관계 찾기 (MVP: 1:1 관계 기준)
       const { data: relation, error: relationError } = await supabase
         .from('relations')
-        .select('relation_id, parent_id, child_id, status')
+        .select('id, parent_id, child_id, status')
         .eq('parent_id', profile.id)
         .eq('status', 'ACTIVE')
         .maybeSingle<ActiveRelation>()
@@ -243,7 +243,7 @@ export const useQuestsScreen = () => {
         .from('quests')
         .insert([
           {
-            relation_id: relation.relation_id,
+            relation_id: relation.id,
             parent_id: profile.id,
             child_id: relation.child_id,
             title: payload.title,
