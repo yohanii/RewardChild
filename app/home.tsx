@@ -74,18 +74,20 @@ export default function Home() {
 
       setProfile(data)
 
-      const { data: balanceRow, error: balanceError } = await supabase
+      const { data: balanceRows, error: balanceError } = await supabase
         .from('balances')
-        .select('balance')
-        .eq('user_id', data.id)
-        .maybeSingle()
-
-      console.log('home :: balanceRow = ', balanceRow)
+        .select('amount')
+        .eq('user_id', user.id)
 
       if (balanceError) {
-        console.warn('balance load error', balanceError.message)
+        console.warn(balanceError)
       }
-      setBalance(balanceRow?.balance ?? 0)
+
+      const totalBalance =
+        (balanceRows ?? []).reduce((sum, row) => sum + (row.amount ?? 0), 0)
+
+      setBalance(totalBalance)
+
       setLoading(false)
     }
 

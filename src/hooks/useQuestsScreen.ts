@@ -20,7 +20,7 @@ type ActiveRelation = {
 }
 
 type BalanceRow = {
-  balance: number
+  amount: number
 }
 
 const getDDayLabel = (quest: Quest) => {
@@ -68,17 +68,19 @@ export const useQuestsScreen = () => {
       }
       setProfile(profileRow)
 
-      // 3) balance
-      const { data: balanceRow, error: balanceError } = await supabase
+      const { data: balanceRows, error: balanceError } = await supabase
         .from('balances')
-        .select('balance')
+        .select('amount')
         .eq('user_id', profileRow.id)
-        .maybeSingle<BalanceRow>()
 
       if (balanceError) {
         console.warn(balanceError)
       }
-      setBalance(balanceRow?.balance ?? 0)
+
+      const totalBalance =
+        (balanceRows ?? []).reduce((sum, row) => sum + (row.amount ?? 0), 0)
+
+      setBalance(totalBalance)
 
       // 4) quests (RLS로 필터)
       const { data: questRows, error: questError } = await supabase
