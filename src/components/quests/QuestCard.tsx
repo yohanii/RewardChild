@@ -1,7 +1,7 @@
 // src/components/quests/QuestCard.tsx
+import type { Quest, UserRole } from '@/src/types/quest'
 import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import type { Quest, UserRole } from '@/src/types/quest'
 import { QuestStatusChip } from './QuestStatusChip'
 
 type Props = {
@@ -60,7 +60,7 @@ export const QuestCard: React.FC<Props> = ({
                 <Text style={styles.actionButtonText}>승인</Text>
               </Pressable>
             )}
-            {onDelete && (
+            {quest.status !== 'COMPLETED' && onDelete && (
               <Pressable
                 style={[styles.actionButton, styles.deleteButton]}
                 onPress={onDelete}

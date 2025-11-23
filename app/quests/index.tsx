@@ -91,7 +91,7 @@ export default function QuestsScreen() {
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {quests.map((q) => (
               <QuestCard
-                key={q.quest_id}
+                key={q.id}
                 quest={q}
                 role={profile!.role}
                 mutating={mutating}
