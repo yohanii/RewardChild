@@ -3,14 +3,15 @@ import { QuestCard } from '@/src/components/quests/QuestCard'
 import { QuestCreateModal } from '@/src/components/quests/QuestCreateModal'
 import { QuestDetailModal } from '@/src/components/quests/QuestDetailModal'
 import { useQuestsScreen } from '@/src/hooks/useQuestsScreen'
+import { router } from 'expo-router'
 import React, { useState } from 'react'
 import {
-    ActivityIndicator,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native'
 
 export default function QuestsScreen() {
@@ -78,6 +79,23 @@ export default function QuestsScreen() {
         )}
       </View>
 
+      <View style={styles.navRow}>
+        <Pressable
+          style={styles.navButton}
+          onPress={() => router.push('/shop')}
+        >
+          <Text style={styles.navButtonText}>상점</Text>
+        </Pressable>
+        {profile?.role === 'PARENT' && (
+          <Pressable
+            style={styles.navButton}
+            onPress={() => router.push('/bank')}
+          >
+            <Text style={styles.navButtonText}>은행</Text>
+          </Pressable>
+        )}
+      </View>
+
       <View style={styles.listContainer}>
         <Text style={styles.sectionTitle}>오늘의 퀘스트</Text>
 
@@ -132,7 +150,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 80,
     paddingBottom: 16,
     backgroundColor: '#0F172A',
   },
@@ -179,6 +197,28 @@ const styles = StyleSheet.create({
     color: '#022C22',
     fontSize: 14,
     fontWeight: '700',
+  },
+  navRow: {
+    position: 'absolute',
+    top: 12,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    zIndex: 20,
+  },
+  navButton: {
+    width: 72,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: '#1E40AF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navButtonText: {
+    color: '#E0E7FF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   listContainer: {
     flex: 1,
