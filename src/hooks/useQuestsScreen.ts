@@ -180,26 +180,32 @@ export const useQuestsScreen = () => {
 
     try {
       setMutating(true)
-      const now = new Date().toISOString()
-      const { error } = await supabase
-        .from('quests')
-        .update({ status: 'COMPLETED', completed_at: now })
-        .eq('id', quest.id)
+
+      // 1) 서버 RPC에서 퀘스트 완료 + 보상 지급을 하나의 트랜잭션으로 처리
+      const { data, error } = await supabase.rpc('approve_quest_with_reward', {
+        p_quest_id: quest.id,
+      })
 
       if (error) {
         console.warn(error)
-        showAlert('승인 실패', '퀘스트 승인 중 오류가 발생했어요.')
+        showAlert(
+          '승인 실패',
+          '퀘스트 승인 또는 보상 지급 중 오류가 발생했어요. 나중에 다시 시도해 주세요.',
+        )
         return
       }
 
+      const updated = (data as Quest) ?? { ...quest, status: 'COMPLETED' as const }
+
+      // 2) 로컬 상태 업데이트
       setQuests((prev) =>
-        prev.map((q) =>
-          q.id === quest.id ? { ...q, status: 'COMPLETED', completed_at: now } : q,
-        ),
+        prev.map((q) => (q.id === quest.id ? { ...q, status: updated.status, completed_at: updated.completed_at } : q)),
       )
       if (selectedQuest?.id === quest.id) {
         setSelectedQuest((prev) =>
-          prev ? { ...prev, status: 'COMPLETED', completed_at: now } : prev,
+          prev
+            ? { ...prev, status: updated.status, completed_at: updated.completed_at }
+            : prev,
         )
       }
     } finally {
@@ -240,7 +246,44 @@ export const useQuestsScreen = () => {
         return false
       }
 
-      // 2) quests insert
+      // 보상 금액 기본 검증
+      if (!payload.reward || payload.reward <= 0) {
+        showAlert('입력 오류', '보상 재화는 1 이상이어야 해요.')
+        return false
+      }
+
+      // 현재 화면에 표시된 잔액 기준으로 1차 체크 (DB의 최종 방어는 spend_coins에서 수행)
+      if (balance < payload.reward) {
+        showAlert('잔액 부족', '보상으로 사용할 재화가 부족해요.')
+        return false
+      }
+
+      // 2) 재화 차감 (spend_coins)
+      //    p_reference_type / p_reference_id / p_note 는 추후 필요 시 확장
+      const { error: spendError } = await supabase.rpc('spend_coins', {
+        p_user_id: profile.id,
+        p_amount: payload.reward,
+      })
+
+      if (spendError) {
+        console.warn(spendError)
+        // 서버 함수에서 잔액 부족을 예외로 던지는 경우를 대비한 처리
+        if (
+          spendError.code === 'P0001' &&
+          typeof spendError.message === 'string' &&
+          spendError.message.includes('INSUFFICIENT_FUNDS')
+        ) {
+          showAlert('잔액 부족', '보상으로 사용할 재화가 부족해요.')
+        } else {
+          showAlert('오류', '재화를 차감하는 중 오류가 발생했어요.')
+        }
+        return false
+      }
+
+      // 로컬 잔액도 즉시 반영
+      setBalance((prev) => prev - payload.reward)
+
+      // 3) quests insert
       const { data, error } = await supabase
         .from('quests')
         .insert([
@@ -263,7 +306,7 @@ export const useQuestsScreen = () => {
         return false
       }
 
-      // 3) 상태 업데이트 (새 퀘스트를 맨 위에 추가)
+      // 4) 상태 업데이트 (새 퀘스트를 맨 위에 추가)
       setQuests((prev) => (data ? [data, ...prev] : prev))
 
       return true
