@@ -28,6 +28,7 @@ export default function QuestsScreen() {
     deleteQuest,
     childRequestQuest,
     parentApproveQuest,
+    parentRejectQuest,
     getDDayLabel,
     createQuest,
   } = useQuestsScreen()
@@ -117,6 +118,7 @@ export default function QuestsScreen() {
                 onPress={() => openQuest(q)}
                 onDelete={() => deleteQuest(q)}
                 onApprove={() => parentApproveQuest(q)}
+                onReject={() => parentRejectQuest(q)}
                 onRequest={() => childRequestQuest(q)}
               />
             ))}
@@ -133,6 +135,7 @@ export default function QuestsScreen() {
         onClose={closeQuest}
         onDelete={selectedQuest ? () => deleteQuest(selectedQuest) : undefined}
         onApprove={selectedQuest ? () => parentApproveQuest(selectedQuest) : undefined}
+        onReject={selectedQuest ? () => parentRejectQuest(selectedQuest) : undefined}
         onRequest={selectedQuest ? () => childRequestQuest(selectedQuest) : undefined}
       />
 

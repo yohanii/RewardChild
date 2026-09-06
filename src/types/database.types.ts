@@ -462,6 +462,28 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_quest_with_refund: {
+        Args: { p_quest_id: number }
+        Returns: {
+          child_id: number
+          completed_at: string | null
+          content: string | null
+          created_at: string | null
+          id: number
+          parent_id: number
+          relation_id: number
+          reward: number
+          status: Database["public"]["Enums"]["quest_status"] | null
+          title: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "quests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       find_child_by_tag: {
         Args: { _nickname: string; _tag: string }
         Returns: {
@@ -475,6 +497,28 @@ export type Database = {
         Returns: number
       }
       is_me_user_id: { Args: { target_user_id: number }; Returns: boolean }
+      reject_quest: {
+        Args: { p_quest_id: number }
+        Returns: {
+          child_id: number
+          completed_at: string | null
+          content: string | null
+          created_at: string | null
+          id: number
+          parent_id: number
+          relation_id: number
+          reward: number
+          status: Database["public"]["Enums"]["quest_status"] | null
+          title: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "quests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       request_quest_completion: {
         Args: { p_quest_id: number }
         Returns: {
@@ -524,6 +568,8 @@ export type Database = {
         | "ATTENDANCE_REWARD"
         | "SPEND_ATTENDANCE"
         | "SPEND_CASH"
+        | "REFUND_ATTENDANCE"
+        | "REFUND_CASH"
       user_role: "DEFAULT" | "PARENT" | "CHILD"
     }
     CompositeTypes: {
@@ -669,6 +715,8 @@ export const Constants = {
         "ATTENDANCE_REWARD",
         "SPEND_ATTENDANCE",
         "SPEND_CASH",
+        "REFUND_ATTENDANCE",
+        "REFUND_CASH",
       ],
       user_role: ["DEFAULT", "PARENT", "CHILD"],
     },

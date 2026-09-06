@@ -11,6 +11,7 @@ type Props = {
   onPress: () => void
   onDelete?: () => void
   onApprove?: () => void
+  onReject?: () => void
   onRequest?: () => void
   ddayLabel: string
 }
@@ -22,6 +23,7 @@ export const QuestCard: React.FC<Props> = ({
   onPress,
   onDelete,
   onApprove,
+  onReject,
   onRequest,
   ddayLabel,
 }) => {
@@ -60,7 +62,16 @@ export const QuestCard: React.FC<Props> = ({
                 <Text style={styles.actionButtonText}>승인</Text>
               </Pressable>
             )}
-            {quest.status !== 'COMPLETED' && onDelete && (
+            {quest.status === 'REQUESTED' && onReject && (
+              <Pressable
+                style={[styles.actionButton, styles.rejectButton]}
+                onPress={onReject}
+                disabled={mutating}
+              >
+                <Text style={styles.actionButtonText}>반려</Text>
+              </Pressable>
+            )}
+            {quest.status === 'REGISTERED' && onDelete && (
               <Pressable
                 style={[styles.actionButton, styles.deleteButton]}
                 onPress={onDelete}
@@ -72,13 +83,17 @@ export const QuestCard: React.FC<Props> = ({
           </>
         )}
 
-        {isChild && quest.status === 'REGISTERED' && onRequest && (
+        {isChild &&
+          (quest.status === 'REGISTERED' || quest.status === 'REJECTED') &&
+          onRequest && (
           <Pressable
             style={[styles.actionButton, styles.requestButton]}
             onPress={onRequest}
             disabled={mutating}
           >
-            <Text style={styles.actionButtonText}>완료 요청</Text>
+            <Text style={styles.actionButtonText}>
+              {quest.status === 'REJECTED' ? '다시 완료 요청' : '완료 요청'}
+            </Text>
           </Pressable>
         )}
       </View>
@@ -153,6 +168,9 @@ const styles = StyleSheet.create({
   },
   approveButton: {
     backgroundColor: '#22C55E',
+  },
+  rejectButton: {
+    backgroundColor: '#F97316',
   },
   deleteButton: {
     backgroundColor: '#EF4444',

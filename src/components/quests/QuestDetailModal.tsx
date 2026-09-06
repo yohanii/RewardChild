@@ -13,6 +13,7 @@ type Props = {
   onClose: () => void
   onDelete?: () => void
   onApprove?: () => void
+  onReject?: () => void
   onRequest?: () => void
 }
 
@@ -25,6 +26,7 @@ export const QuestDetailModal: React.FC<Props> = ({
   onClose,
   onDelete,
   onApprove,
+  onReject,
   onRequest,
 }) => {
   if (!quest) return null
@@ -71,7 +73,16 @@ export const QuestDetailModal: React.FC<Props> = ({
                     <Text style={styles.actionButtonText}>승인</Text>
                   </Pressable>
                 )}
-                {onDelete && (
+                {quest.status === 'REQUESTED' && onReject && (
+                  <Pressable
+                    style={[styles.actionButton, styles.rejectButton]}
+                    onPress={onReject}
+                    disabled={mutating}
+                  >
+                    <Text style={styles.actionButtonText}>반려</Text>
+                  </Pressable>
+                )}
+                {quest.status === 'REGISTERED' && onDelete && (
                   <Pressable
                     style={[styles.actionButton, styles.deleteButton]}
                     onPress={onDelete}
@@ -83,13 +94,17 @@ export const QuestDetailModal: React.FC<Props> = ({
               </>
             )}
 
-            {isChild && quest.status === 'REGISTERED' && onRequest && (
+            {isChild &&
+              (quest.status === 'REGISTERED' || quest.status === 'REJECTED') &&
+              onRequest && (
               <Pressable
                 style={[styles.actionButton, styles.requestButton]}
                 onPress={onRequest}
                 disabled={mutating}
               >
-                <Text style={styles.actionButtonText}>완료 요청</Text>
+                <Text style={styles.actionButtonText}>
+                  {quest.status === 'REJECTED' ? '다시 완료 요청' : '완료 요청'}
+                </Text>
               </Pressable>
             )}
           </View>
@@ -193,6 +208,9 @@ const styles = StyleSheet.create({
   },
   approveButton: {
     backgroundColor: '#22C55E',
+  },
+  rejectButton: {
+    backgroundColor: '#F97316',
   },
   deleteButton: {
     backgroundColor: '#EF4444',

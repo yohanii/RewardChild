@@ -124,20 +124,53 @@ export const useQuestsScreen = () => {
   }
 
   const deleteQuest = async (quest: Quest) => {
-    const ok = await confirmAsync('퀘스트 삭제', '정말로 이 퀘스트를 삭제할까요?')
+    const ok = await confirmAsync(
+      '퀘스트 삭제',
+      '퀘스트를 삭제하고 차감된 보상을 환불할까요?',
+    )
     if (!ok) return
 
     try {
       setMutating(true)
-      const { error } = await supabase.from('quests').delete().eq('id', quest.id)
+      const { error } = await supabase.rpc('delete_quest_with_refund', {
+        p_quest_id: quest.id,
+      })
       if (error) {
         console.warn(error)
         showAlert('삭제 실패', '퀘스트를 삭제하는 중 오류가 발생했어요.')
         return
       }
+      setBalance((prev) => prev + quest.reward)
       setQuests((prev) => prev.filter((q) => q.id !== quest.id))
       if (selectedQuest?.id === quest.id) {
         closeQuest()
+      }
+    } finally {
+      setMutating(false)
+    }
+  }
+
+  const parentRejectQuest = async (quest: Quest) => {
+    const ok = await confirmAsync('퀘스트 반려', '완료 요청을 반려할까요?')
+    if (!ok) return
+
+    try {
+      setMutating(true)
+      const { error } = await supabase.rpc('reject_quest', {
+        p_quest_id: quest.id,
+      })
+
+      if (error) {
+        console.warn(error)
+        showAlert('반려 실패', '퀘스트를 반려하는 중 오류가 발생했어요.')
+        return
+      }
+
+      setQuests((prev) =>
+        prev.map((q) => (q.id === quest.id ? { ...q, status: 'REJECTED' } : q)),
+      )
+      if (selectedQuest?.id === quest.id) {
+        setSelectedQuest((prev) => (prev ? { ...prev, status: 'REJECTED' } : prev))
       }
     } finally {
       setMutating(false)
@@ -306,6 +339,7 @@ export const useQuestsScreen = () => {
     deleteQuest,
     childRequestQuest,
     parentApproveQuest,
+    parentRejectQuest,
     getDDayLabel,
     createQuest,
   }
