@@ -21,7 +21,7 @@ function ParentHome({ nickname, balance }: { nickname: string; balance: number |
         <Button title="퀘스트 보기" onPress={() => router.push('/quests')} />
       </View>
       <View style={styles.section}>
-        <Button title="상점 관리" onPress={() => router.push('/shop/manage')} />
+        <Button title="상점 관리" onPress={() => router.push('/shop')} />
       </View>
     </View>
   )
@@ -72,12 +72,22 @@ export default function Home() {
         return
       }
 
-      setProfile(data)
+      if (!data.nickname) {
+        router.replace('/onboarding/nickname')
+        return
+      }
+
+      if (data.role === 'DEFAULT') {
+        router.replace('/role-select')
+        return
+      }
+
+      setProfile({ id: data.id, nickname: data.nickname, role: data.role })
 
       const { data: balanceRows, error: balanceError } = await supabase
         .from('balances')
         .select('amount')
-        .eq('user_id', user.id)
+        .eq('user_id', data.id)
 
       if (balanceError) {
         console.warn(balanceError)

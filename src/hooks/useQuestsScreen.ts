@@ -12,17 +12,6 @@ export type CreateQuestPayload = {
   reward: number
 }
 
-type ActiveRelation = {
-  id: number
-  parent_id: number
-  child_id: number
-  status: string
-}
-
-type BalanceRow = {
-  amount: number
-}
-
 const getDDayLabel = (quest: Quest) => {
   // 실제로 due_date가 생기면 여기서 계산
   return 'D-1'
@@ -59,19 +48,33 @@ export const useQuestsScreen = () => {
         .from('users')
         .select('id, role, nickname')
         .eq('auth_user_id', authData.user.id)
-        .maybeSingle<Profile>()
+        .maybeSingle()
 
       if (profileError || !profileRow) {
         console.warn(profileError)
         showAlert('오류', '프로필 정보를 불러오지 못했어요.')
         return
       }
-      setProfile(profileRow)
+      if (!profileRow.nickname) {
+        router.replace('/onboarding/nickname')
+        return
+      }
+      if (profileRow.role === 'DEFAULT') {
+        router.replace('/role-select')
+        return
+      }
+
+      const onboardedProfile: Profile = {
+        id: profileRow.id,
+        role: profileRow.role,
+        nickname: profileRow.nickname,
+      }
+      setProfile(onboardedProfile)
 
       const { data: balanceRows, error: balanceError } = await supabase
         .from('balances')
         .select('amount')
-        .eq('user_id', profileRow.id)
+        .eq('user_id', onboardedProfile.id)
 
       if (balanceError) {
         console.warn(balanceError)
@@ -94,7 +97,7 @@ export const useQuestsScreen = () => {
         return
       }
 
-      setQuests((questRows ?? []) as Quest[])
+      setQuests(questRows ?? [])
     } finally {
       setLoading(false)
     }
@@ -195,7 +198,7 @@ export const useQuestsScreen = () => {
         return
       }
 
-      const updated = (data as Quest) ?? { ...quest, status: 'COMPLETED' as const }
+      const updated = data ?? { ...quest, status: 'COMPLETED' as const }
 
       // 2) 로컬 상태 업데이트
       setQuests((prev) =>
@@ -233,7 +236,7 @@ export const useQuestsScreen = () => {
         .select('id, parent_id, child_id, status')
         .eq('parent_id', profile.id)
         .eq('status', 'ACTIVE')
-        .maybeSingle<ActiveRelation>()
+        .maybeSingle()
 
       if (relationError) {
         console.warn(relationError)
@@ -298,7 +301,7 @@ export const useQuestsScreen = () => {
           },
         ])
         .select('*')
-        .single<Quest>()
+        .single()
 
       if (error) {
         console.warn(error)

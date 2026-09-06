@@ -1,15 +1,15 @@
 // src/components/quests/QuestStatusChip.tsx
 import React from 'react'
 import { StyleSheet, Text, View, ViewStyle, TextStyle } from 'react-native'
-import type { QuestStatus } from '@/src/types/quest'
+import type { Quest, QuestStatus } from '@/src/types/quest'
 
 type Props = {
-  status: QuestStatus
+  status: Quest['status']
   style?: ViewStyle
   textStyle?: TextStyle
 }
 
-const getStatusStyle = (status: QuestStatus) => {
+const getStatusStyle = (status: QuestStatus | null) => {
   switch (status) {
     case 'REGISTERED':
       return {
@@ -29,9 +29,15 @@ const getStatusStyle = (status: QuestStatus) => {
         container: styles.statusCompleted,
         text: styles.statusCompletedText,
       }
+    case 'REJECTED':
+      return {
+        label: '반려됨',
+        container: styles.statusRejected,
+        text: styles.statusRejectedText,
+      }
     default:
       return {
-        label: status,
+        label: '상태 없음',
         container: styles.statusRegistered,
         text: styles.statusRegisteredText,
       }
@@ -81,5 +87,13 @@ const styles = StyleSheet.create({
   },
   statusCompletedText: {
     color: '#BBF7D0',
+  },
+  statusRejected: {
+    backgroundColor: '#450A0A',
+    borderWidth: 1,
+    borderColor: '#EF4444',
+  },
+  statusRejectedText: {
+    color: '#FECACA',
   },
 })

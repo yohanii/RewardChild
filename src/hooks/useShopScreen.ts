@@ -1,24 +1,27 @@
 // src/hooks/useShopScreen.ts
 import { supabase } from '@/src/services/supabaseClient'
+import type { Enums, Tables } from '@/src/types/database.types'
+import { router } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 
 export type Profile = {
   id: number
-  role: 'PARENT' | 'CHILD'
+  role: Exclude<Enums<'user_role'>, 'DEFAULT'>
   nickname?: string | null
 }
 
-export type ShopItem = {
-  id: number
-  parent_id: number
-  title: string
-  content: string | null
-  price: number
-  is_active: boolean
-  sort_order: number
-  created_at?: string
-  updated_at?: string
-}
+export type ShopItem = Pick<
+  Tables<'shop_items'>,
+  | 'id'
+  | 'parent_id'
+  | 'title'
+  | 'content'
+  | 'price'
+  | 'is_active'
+  | 'sort_order'
+  | 'created_at'
+  | 'updated_at'
+>
 
 type CreateItemPayload = {
   title: string
@@ -88,6 +91,10 @@ export function useShopScreen() {
 
     if (error) throw error
     if (!data) throw new Error('No profile row in users')
+    if (data.role === 'DEFAULT') {
+      router.replace('/role-select')
+      throw new Error('Profile onboarding is incomplete')
+    }
 
     return { id: data.id, role: data.role, nickname: data.nickname }
   }
@@ -134,7 +141,7 @@ export function useShopScreen() {
       .order('id', { ascending: false })
 
     if (error) throw error
-    setItems((data ?? []) as ShopItem[])
+    setItems(data ?? [])
   }
 
   const loadPurchased = async (childId: number) => {
@@ -145,7 +152,7 @@ export function useShopScreen() {
 
     if (error) throw error
     const set = new Set<number>()
-    ;(data ?? []).forEach((r: any) => set.add(r.shop_item_id))
+    ;(data ?? []).forEach((r) => set.add(r.shop_item_id))
     setPurchasedSet(set)
   }
 

@@ -4,11 +4,17 @@ import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native'
 import { supabase } from '../../src/services/supabaseClient'
+import type { Enums } from '../../src/types/database.types'
 
-type ChildResult = { id: number; nickname: string; tag: string }
+type OnboardedProfile = {
+  id: number
+  role: Exclude<Enums<'user_role'>, 'DEFAULT'>
+  nickname: string
+  tag: string
+}
 
 export default function RelationConnectScreen() {
-  const [profile, setProfile] = useState<{ id: number; role: string; nickname: string; tag: string } | null>(null)
+  const [profile, setProfile] = useState<OnboardedProfile | null>(null)
   const [childTag, setChildTag] = useState('')
   const [waitingRelationId, setWaitingRelationId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
@@ -30,7 +36,22 @@ export default function RelationConnectScreen() {
         .eq('auth_user_id', user.id)
         .single()
 
-      if (data) setProfile(data)
+      if (!data) return
+      if (!data.nickname || !data.tag) {
+        router.replace('/onboarding/nickname')
+        return
+      }
+      if (data.role === 'DEFAULT') {
+        router.replace('/role-select')
+        return
+      }
+
+      setProfile({
+        id: data.id,
+        role: data.role,
+        nickname: data.nickname,
+        tag: data.tag,
+      })
     })()
   }, [])
 
@@ -62,13 +83,14 @@ export default function RelationConnectScreen() {
   // ✅ 4. 부모가 연결 요청 보내기
   const handleConnect = async () => {
     if (loading) return
+    if (!profile) return showAlert('오류', '프로필 정보를 찾을 수 없습니다.')
     const [nickname, tag] = (childTag ?? '').split('#')
     if (!nickname || !tag) return showAlert('닉네임#태그 형식으로 입력해주세요')
 
     setLoading(true)
     const { data: child, error: childErr } = await supabase
-      .rpc('find_child_by_tag' as const, { _nickname: nickname.trim(), _tag: tag.trim() })
-      .maybeSingle<ChildResult>()
+      .rpc('find_child_by_tag', { _nickname: nickname.trim(), _tag: tag.trim() })
+      .maybeSingle()
 
     if (childErr || !child) {
       setLoading(false)
@@ -78,7 +100,7 @@ export default function RelationConnectScreen() {
     const { data: existing } = await supabase
       .from('relations')
       .select('id,status')
-      .eq('parent_id', profile?.id)
+      .eq('parent_id', profile.id)
       .eq('child_id', child.id)
       .maybeSingle()
 
@@ -96,7 +118,7 @@ export default function RelationConnectScreen() {
 
     const { data: inserted, error } = await supabase
       .from('relations')
-      .insert({ parent_id: profile?.id, child_id: child.id, status: 'PENDING' })
+      .insert({ parent_id: profile.id, child_id: child.id, status: 'PENDING' })
       .select('id')
       .single()
 

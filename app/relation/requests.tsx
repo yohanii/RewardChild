@@ -4,37 +4,16 @@ import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Button, StyleSheet, Text, View } from 'react-native'
 import { supabase } from '../../src/services/supabaseClient'
+import type { Tables } from '../../src/types/database.types'
 
-// Supabase가 내려줄 수 있는 원시 parent 형태: 객체 | 배열 | null
-type RawParent =
-  | { nickname: string; tag: string }
-  | { nickname: string; tag: string }[]
-  | null
-
-type RawRelationRow = {
-  id: number
-  parent_id: number
-  status: string
-  parent: RawParent
+type RelationRequest = Pick<Tables<'relations'>, 'id' | 'parent_id' | 'status'> & {
+  parent: Pick<Tables<'users'>, 'nickname' | 'tag'> | null
 }
 
-interface RelationRequest {
-  id: number
-  parent_id: number
-  status: string
-  parent: { nickname: string; tag: string } | null
-}
-
-// 배열/객체 케이스 모두 안전하게 정규화
-const normalizeParent = (
-  p: RawParent
-): { nickname: string; tag: string } | null => {
-  if (!p) return null
-  return Array.isArray(p) ? p[0] ?? null : p
-}
+type RequestProfile = Pick<Tables<'users'>, 'id' | 'nickname' | 'tag'>
 
 export default function RelationRequestsScreen() {
-  const [profile, setProfile] = useState<{ id: number; nickname: string; tag: string } | null>(null)
+  const [profile, setProfile] = useState<RequestProfile | null>(null)
   const [requests, setRequests] = useState<RelationRequest[]>([])
 
   useOnRelationActivated(profile?.id ?? 0, 'CHILD', () => {
@@ -66,22 +45,14 @@ export default function RelationRequestsScreen() {
         .select('id, parent_id, status, parent:users!parent_id(nickname, tag)')
         .eq('child_id', child.id)
         .eq('status', 'PENDING')
-        .returns<RawRelationRow[]>()
 
       if (error) {
         console.error(error)
         return
       }
 
-      const normalized: RelationRequest[] = (data ?? []).map(r => ({
-        id: r.id,
-        parent_id: r.parent_id,
-        status: r.status,
-        parent: normalizeParent(r.parent),
-      }))
-
-      setRequests(normalized)
-      console.log('requests(normalized) = ', normalized)
+      setRequests(data ?? [])
+      console.log('requests = ', data)
     }
 
     loadRequests()
@@ -105,7 +76,7 @@ export default function RelationRequestsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.myTag}>
-        내 코드: {profile.nickname}#{profile.tag}
+        내 코드: {profile.nickname ?? '닉네임 미설정'}#{profile.tag ?? '태그 미설정'}
       </Text>
 
       <Text style={styles.title}>부모님의 연결 요청</Text>
@@ -114,7 +85,9 @@ export default function RelationRequestsScreen() {
         <Text>현재 연결 요청이 없습니다.</Text>
       ) : (
         requests.map((r) => {
-          const label = r.parent ? `${r.parent.nickname}#${r.parent.tag}` : '알 수 없는 사용자'
+          const label = r.parent
+            ? `${r.parent.nickname ?? '닉네임 미설정'}#${r.parent.tag ?? '태그 미설정'}`
+            : '알 수 없는 사용자'
           return (
             <View key={r.id} style={styles.card}>
               <Text>부모님: {label}</Text>

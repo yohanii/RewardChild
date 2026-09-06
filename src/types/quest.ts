@@ -1,22 +1,14 @@
-// src/types/quest.ts
+import type { Enums, Tables } from './database.types'
 
-export type UserRole = 'PARENT' | 'CHILD'
+export type UserRole = Exclude<Enums<'user_role'>, 'DEFAULT'>
 
-export type QuestStatus = 'REGISTERED' | 'REQUESTED' | 'COMPLETED'
+export type QuestStatus = Enums<'quest_status'>
 
-export type Profile = {
-  id: number
+type UserRow = Tables<'users'>
+
+export type Profile = Pick<UserRow, 'id'> & {
   role: UserRole
   nickname: string
 }
 
-export type Quest = {
-  id: number
-  title: string
-  content: string | null
-  reward: number
-  status: QuestStatus
-  created_at: string
-  completed_at?: string | null
-  // 필요한 경우: due_date?: string | null
-}
+export type Quest = Tables<'quests'>

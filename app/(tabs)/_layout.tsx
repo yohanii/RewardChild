@@ -120,12 +120,12 @@ function useHeaderData(profile: ProfileForTabs | null) {
 
         if (!mounted) return
 
-        const rows = (data ?? []) as Array<{ type: string; amount: number }>
+        const rows = data ?? []
         const attendance =
-          rows.find((r) => String(r.type).toUpperCase() === 'ATTENDANCE')
+          rows.find((r) => r.type === 'ATTENDANCE')
             ?.amount ?? 0
         const cash =
-          rows.find((r) => String(r.type).toUpperCase() === 'CASH')?.amount ?? 0
+          rows.find((r) => r.type === 'CASH')?.amount ?? 0
 
         // 기존 state 이름(purchaseCoin)은 유지하되, 의미는 CASH(현금)로 사용
         setAttendanceCoin(attendance)
@@ -288,7 +288,7 @@ export default function TabsLayout() {
           tabBarItemStyle: {
             paddingVertical: 6,
           },
-          sceneContainerStyle: { backgroundColor: '#0F172A' },
+          sceneStyle: { backgroundColor: '#0F172A' },
         }}
       >
         <Tabs.Screen
