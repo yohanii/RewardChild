@@ -435,6 +435,33 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_quest_with_reward: {
+        Args: {
+          p_content?: string
+          p_relation_id: number
+          p_reward: number
+          p_title: string
+        }
+        Returns: {
+          child_id: number
+          completed_at: string | null
+          content: string | null
+          created_at: string | null
+          id: number
+          parent_id: number
+          relation_id: number
+          reward: number
+          status: Database["public"]["Enums"]["quest_status"] | null
+          title: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "quests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       find_child_by_tag: {
         Args: { _nickname: string; _tag: string }
         Returns: {

@@ -29,6 +29,8 @@ Migration 체계 구축 이후 DB 구조 변경은 모두 `supabase/migrations/`
 
 RLS 문제를 해결하기 위해 RLS를 비활성화하지 않는다. Frontend에서 `service_role` key를 사용하지 않는다.
 
+로컬 Supabase DB 테스트에서 docker exec/psql 명령은 가능하면 shell wrapper(`/bin/zsh -lc`)를 사용하지 말고 직접 실행한다.
+
 ## 재화
 
 `ATTENDANCE`, `CASH`, balances, transactions의 정확한 규칙은 아직 검증 중이다.
