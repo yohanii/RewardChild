@@ -153,10 +153,9 @@ export const useQuestsScreen = () => {
 
     try {
       setMutating(true)
-      const { error } = await supabase
-        .from('quests')
-        .update({ status: 'REQUESTED' })
-        .eq('id', quest.id)
+      const { error } = await supabase.rpc('request_quest_completion', {
+        p_quest_id: quest.id,
+      })
 
       if (error) {
         console.warn(error)
