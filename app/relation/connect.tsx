@@ -114,19 +114,35 @@ export default function RelationConnectScreen() {
         setLoading(false)
         return showAlert('이미 요청 대기 중입니다.')
       }
+      if (existing.status === 'BLOCKED') {
+        setLoading(false)
+        return showAlert('차단된 관계는 다시 연결할 수 없습니다.')
+      }
     }
 
-    const { data: inserted, error } = await supabase
-      .from('relations')
-      .insert({ parent_id: profile.id, child_id: child.id, status: 'PENDING' })
-      .select('id')
-      .single()
+    const { data: inserted, error } = await supabase.rpc('create_relation_request', {
+      p_child_id: child.id,
+    })
 
     setLoading(false)
-    if (error) return showAlert('연결 실패', error.message)
+    if (error || !inserted) return showAlert('연결 실패', error?.message ?? '연결 요청 결과가 없습니다.')
 
     setWaitingRelationId(inserted.id)
     showAlert('연결 요청 완료', '자녀의 승인을 기다려주세요.')
+  }
+
+  const handleCancel = async () => {
+    if (!waitingRelationId || loading) return
+
+    setLoading(true)
+    const { error } = await supabase.rpc('cancel_relation_request', {
+      p_relation_id: waitingRelationId,
+    })
+    setLoading(false)
+
+    if (error) return showAlert('요청 취소 실패', error.message)
+    setWaitingRelationId(null)
+    showAlert('연결 요청을 취소했습니다.')
   }
 
   if (!profile) return null
@@ -152,9 +168,12 @@ export default function RelationConnectScreen() {
           <Button title={loading ? '요청 중...' : '연결 요청'} onPress={handleConnect} disabled={loading} />
 
           {waitingRelationId && !loading && (
-            <Text style={{ marginTop: 16, textAlign: 'center' }}>
-              요청이 전송되었습니다. 자녀가 수락하면 자동으로 이동합니다.
-            </Text>
+            <View style={styles.waitingArea}>
+              <Text style={styles.waitingText}>
+                요청이 전송되었습니다. 자녀가 수락하면 자동으로 이동합니다.
+              </Text>
+              <Button title="요청 취소" onPress={handleCancel} color="#DC2626" />
+            </View>
           )}
         </>
       ) : (
@@ -172,4 +191,6 @@ const styles = StyleSheet.create({
   myTag: { fontSize: 18, fontWeight: '600', marginBottom: 24, textAlign: 'center' },
   title: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#aaa', borderRadius: 8, padding: 12, marginBottom: 12 },
+  waitingArea: { marginTop: 16, gap: 10 },
+  waitingText: { textAlign: 'center' },
 })

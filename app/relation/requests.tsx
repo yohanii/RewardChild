@@ -59,15 +59,26 @@ export default function RelationRequestsScreen() {
   }, [])
 
   const handleApprove = async (relationId: number) => {
-    const { error } = await supabase
-      .from('relations')
-      .update({ status: 'ACTIVE' })
-      .eq('id', relationId)
+    const { error } = await supabase.rpc('approve_relation_request', {
+      p_relation_id: relationId,
+    })
 
     if (error) showAlert('승인 실패', error.message)
     else {
       showAlert('가족 연결 완료!')
       router.replace('/home')
+    }
+  }
+
+  const handleReject = async (relationId: number) => {
+    const { error } = await supabase.rpc('reject_relation_request', {
+      p_relation_id: relationId,
+    })
+
+    if (error) showAlert('거절 실패', error.message)
+    else {
+      setRequests((current) => current.filter((request) => request.id !== relationId))
+      showAlert('연결 요청을 거절했습니다.')
     }
   }
 
@@ -91,7 +102,10 @@ export default function RelationRequestsScreen() {
           return (
             <View key={r.id} style={styles.card}>
               <Text>부모님: {label}</Text>
-              <Button title="수락" onPress={() => handleApprove(r.id)} />
+              <View style={styles.actions}>
+                <Button title="수락" onPress={() => handleApprove(r.id)} />
+                <Button title="거절" onPress={() => handleReject(r.id)} color="#DC2626" />
+              </View>
             </View>
           )
         })
@@ -105,4 +119,5 @@ const styles = StyleSheet.create({
   myTag: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
   title: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
   card: { marginBottom: 12, padding: 12, borderWidth: 1, borderRadius: 8 },
+  actions: { marginTop: 8, gap: 6 },
 })

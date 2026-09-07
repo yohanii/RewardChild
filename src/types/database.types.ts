@@ -435,6 +435,54 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      approve_relation_request: {
+        Args: { p_relation_id: number }
+        Returns: {
+          child_id: number
+          created_at: string | null
+          id: number
+          parent_id: number
+          status: Database["public"]["Enums"]["relation_status"] | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "relations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      block_relation: {
+        Args: { p_relation_id: number }
+        Returns: {
+          child_id: number
+          created_at: string | null
+          id: number
+          parent_id: number
+          status: Database["public"]["Enums"]["relation_status"] | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "relations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cancel_relation_request: {
+        Args: { p_relation_id: number }
+        Returns: {
+          child_id: number
+          created_at: string | null
+          id: number
+          parent_id: number
+          status: Database["public"]["Enums"]["relation_status"] | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "relations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_quest_with_reward: {
         Args: {
           p_content?: string
@@ -458,6 +506,22 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "quests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_relation_request: {
+        Args: { p_child_id: number }
+        Returns: {
+          child_id: number
+          created_at: string | null
+          id: number
+          parent_id: number
+          status: Database["public"]["Enums"]["relation_status"] | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "relations"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -515,6 +579,22 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "quests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reject_relation_request: {
+        Args: { p_relation_id: number }
+        Returns: {
+          child_id: number
+          created_at: string | null
+          id: number
+          parent_id: number
+          status: Database["public"]["Enums"]["relation_status"] | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "relations"
           isOneToOne: true
           isSetofReturn: false
         }
