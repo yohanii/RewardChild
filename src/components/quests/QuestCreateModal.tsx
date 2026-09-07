@@ -105,7 +105,7 @@ export const QuestCreateModal: React.FC<Props> = ({
               <TextInput
                 style={styles.input}
                 placeholder="예: 오늘 숙제 30분 하기"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor="#94A3B8"
                 value={title}
                 onChangeText={setTitle}
               />
@@ -117,7 +117,7 @@ export const QuestCreateModal: React.FC<Props> = ({
               <TextInput
                 style={[styles.input, styles.textarea]}
                 placeholder="퀘스트에 대한 자세한 설명을 적어주세요."
-                placeholderTextColor="#6B7280"
+                placeholderTextColor="#94A3B8"
                 multiline
                 value={content}
                 onChangeText={setContent}
@@ -132,7 +132,7 @@ export const QuestCreateModal: React.FC<Props> = ({
               <TextInput
                 style={styles.input}
                 placeholder="예: 100"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor="#94A3B8"
                 keyboardType="number-pad"
                 value={rewardText}
                 onChangeText={setRewardText}
@@ -165,7 +165,7 @@ export const QuestCreateModal: React.FC<Props> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.85)',
+    backgroundColor: 'rgba(15,23,42,0.4)',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
@@ -173,9 +173,7 @@ const styles = StyleSheet.create({
     maxHeight: '85%',
     borderRadius: 20,
     padding: 16,
-    backgroundColor: '#020617',
-    borderWidth: 1,
-    borderColor: '#1F2937',
+    backgroundColor: '#FFFFFF',
   },
   headerRow: {
     flexDirection: 'row',
@@ -185,13 +183,13 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    color: '#F9FAFB',
+    color: '#0F172A',
     fontSize: 18,
     fontWeight: '700',
     marginRight: 8,
   },
   closeText: {
-    color: '#9CA3AF',
+    color: '#64748B',
     fontSize: 18,
   },
   body: {
@@ -202,7 +200,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   label: {
-    color: '#E5E7EB',
+    color: '#334155',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 4,
@@ -213,12 +211,12 @@ const styles = StyleSheet.create({
   input: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: '#E2E8F0',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    color: '#F9FAFB',
+    color: '#0F172A',
     fontSize: 14,
-    backgroundColor: '#020617',
+    backgroundColor: '#F8FAFC',
   },
   textarea: {
     height: 100,
@@ -227,7 +225,7 @@ const styles = StyleSheet.create({
   helperText: {
     marginTop: 4,
     fontSize: 11,
-    color: '#9CA3AF',
+    color: '#64748B',
   },
   footer: {
     marginTop: 4,
@@ -241,20 +239,18 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   cancelButton: {
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: '#4B5563',
+    backgroundColor: '#F1F5F9',
   },
   cancelButtonText: {
-    color: '#E5E7EB',
+    color: '#475569',
     fontSize: 13,
     fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#22C55E',
+    backgroundColor: '#2563EB',
   },
   submitButtonText: {
-    color: '#022C22',
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
   },

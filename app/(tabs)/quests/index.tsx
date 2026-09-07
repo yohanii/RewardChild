@@ -1,125 +1,62 @@
-// app/quests/index.tsx
+import { BalanceCard } from '@/src/components/common/BalanceCard'
+import { ScreenHeader } from '@/src/components/common/ScreenHeader'
 import { QuestCard } from '@/src/components/quests/QuestCard'
 import { QuestCreateModal } from '@/src/components/quests/QuestCreateModal'
 import { QuestDetailModal } from '@/src/components/quests/QuestDetailModal'
 import { useQuestsScreen } from '@/src/hooks/useQuestsScreen'
-import { router } from 'expo-router'
 import React, { useState } from 'react'
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function QuestsScreen() {
   const {
-    profile,
-    balance,
-    quests,
-    loading,
-    mutating,
-    selectedQuest,
-    modalVisible,
-    openQuest,
-    closeQuest,
-    deleteQuest,
-    childRequestQuest,
-    parentApproveQuest,
-    parentRejectQuest,
-    getDDayLabel,
-    createQuest,
+    profile, balance, quests, loading, mutating, selectedQuest, modalVisible,
+    openQuest, closeQuest, deleteQuest, childRequestQuest, parentApproveQuest,
+    parentRejectQuest, getDDayLabel, createQuest,
   } = useQuestsScreen()
-
   const [createVisible, setCreateVisible] = useState(false)
 
   if (loading && !profile) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator />
-      </View>
-    )
+    return <View style={styles.loadingContainer}><ActivityIndicator color="#2563EB" /></View>
   }
 
-  const renderEmptyState = () => {
-    if (!profile) return null
-    if (profile.role === 'PARENT') {
-      return (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>아직 등록된 퀘스트가 없어요.</Text>
-          <Text style={styles.emptySubtitle}>상단 버튼으로 첫 번째 퀘스트를 만들어볼까요?</Text>
-        </View>
-      )
-    }
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyTitle}>아직 받을 수 있는 퀘스트가 없어요.</Text>
-        <Text style={styles.emptySubtitle}>부모님께 새로운 퀘스트를 부탁해보세요!</Text>
-      </View>
-    )
-  }
+  const isParent = profile?.role === 'PARENT'
 
   return (
-    <View style={styles.container}>
-      {/* 상단: 잔액 + 부모 전용 등록 버튼 */}
-      <View style={styles.header}>
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>내 재화</Text>
-          <Text style={styles.balanceValue}>{balance.toLocaleString()} COIN</Text>
-        </View>
-
-        {profile?.role === 'PARENT' && (
-            <Pressable
-                style={styles.createQuestButton}
-                onPress={() => setCreateVisible(true)}
-            >
-                <Text style={styles.createQuestButtonText}>퀘스트 등록</Text>
-            </Pressable>
-        )}
-      </View>
-
-      <View style={styles.navRow}>
-        <Pressable
-          style={styles.navButton}
-          onPress={() => router.push('/shop')}
-        >
-          <Text style={styles.navButtonText}>상점</Text>
-        </Pressable>
-        {profile?.role === 'PARENT' && (
-          <Pressable
-            style={styles.navButton}
-            onPress={() => router.push('/bank')}
-          >
-            <Text style={styles.navButtonText}>은행</Text>
-          </Pressable>
-        )}
-      </View>
-
-      <View style={styles.listContainer}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.content}>
+        <ScreenHeader
+          title="퀘스트"
+          subtitle={isParent ? '아이의 할 일과 완료 요청을 관리해요.' : '오늘 할 일을 확인하고 완료를 요청해요.'}
+          actionLabel={isParent ? '퀘스트 등록' : undefined}
+          onAction={isParent ? () => setCreateVisible(true) : undefined}
+        />
+        <BalanceCard label="사용 가능한 코인" amount={balance} compact />
         <Text style={styles.sectionTitle}>오늘의 퀘스트</Text>
 
         {loading ? (
-          <View style={styles.loadingInlineContainer}>
-            <ActivityIndicator />
-          </View>
+          <View style={styles.loadingInline}><ActivityIndicator color="#2563EB" /></View>
         ) : quests.length === 0 ? (
-          renderEmptyState()
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>{isParent ? '아직 등록된 퀘스트가 없어요.' : '아직 받을 수 있는 퀘스트가 없어요.'}</Text>
+            <Text style={styles.emptySubtitle}>
+              {isParent ? '첫 번째 퀘스트를 만들어 보세요.' : '새 퀘스트가 도착하면 이곳에 표시돼요.'}
+            </Text>
+          </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            {quests.map((q) => (
+          <ScrollView style={styles.list} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {quests.map((quest) => (
               <QuestCard
-                key={q.id}
-                quest={q}
+                key={quest.id}
+                quest={quest}
                 role={profile!.role}
                 mutating={mutating}
-                ddayLabel={getDDayLabel(q)}
-                onPress={() => openQuest(q)}
-                onDelete={() => deleteQuest(q)}
-                onApprove={() => parentApproveQuest(q)}
-                onReject={() => parentRejectQuest(q)}
-                onRequest={() => childRequestQuest(q)}
+                ddayLabel={getDDayLabel(quest)}
+                onPress={() => openQuest(quest)}
+                onDelete={() => deleteQuest(quest)}
+                onApprove={() => parentApproveQuest(quest)}
+                onReject={() => parentRejectQuest(quest)}
+                onRequest={() => childRequestQuest(quest)}
               />
             ))}
           </ScrollView>
@@ -138,125 +75,20 @@ export default function QuestsScreen() {
         onReject={selectedQuest ? () => parentRejectQuest(selectedQuest) : undefined}
         onRequest={selectedQuest ? () => childRequestQuest(selectedQuest) : undefined}
       />
-
-      <QuestCreateModal
-        visible={createVisible}
-        mutating={mutating}
-        onClose={() => setCreateVisible(false)}
-        onSubmit={createQuest}
-      />
-    </View>
+      <QuestCreateModal visible={createVisible} mutating={mutating} onClose={() => setCreateVisible(false)} onSubmit={createQuest} />
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 80,
-    paddingBottom: 16,
-    backgroundColor: '#0F172A',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#0F172A',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
-  },
-  balanceCard: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: '#1F2937',
-  },
-  balanceLabel: {
-    color: '#9CA3AF',
-    fontSize: 12,
-  },
-  balanceValue: {
-    color: '#F9FAFB',
-    fontSize: 20,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-  createQuestButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    backgroundColor: '#22C55E',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  createQuestButtonText: {
-    color: '#022C22',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  navRow: {
-    position: 'absolute',
-    top: 12,
-    right: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    zIndex: 20,
-  },
-  navButton: {
-    width: 72,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: '#1E40AF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  navButtonText: {
-    color: '#E0E7FF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  listContainer: {
-    flex: 1,
-    marginTop: 8,
-  },
-  sectionTitle: {
-    color: '#E5E7EB',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  loadingInlineContainer: {
-    marginTop: 24,
-  },
-  emptyContainer: {
-    marginTop: 32,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: '#1F2937',
-  },
-  emptyTitle: {
-    color: '#E5E7EB',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  emptySubtitle: {
-    color: '#9CA3AF',
-    fontSize: 13,
-  },
-  scrollContent: {
-    paddingVertical: 8,
-    paddingBottom: 24,
-    gap: 12,
-  },
+  safeArea: { flex: 1, backgroundColor: '#F6F7FB' },
+  content: { flex: 1, width: '100%', maxWidth: 640, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 16, gap: 18 },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F7FB' },
+  sectionTitle: { color: '#334155', fontSize: 16, fontWeight: '800', marginTop: 2 },
+  loadingInline: { paddingTop: 24 },
+  emptyContainer: { padding: 20, borderRadius: 20, backgroundColor: '#FFFFFF' },
+  emptyTitle: { color: '#1E293B', fontSize: 16, fontWeight: '700' },
+  emptySubtitle: { color: '#64748B', fontSize: 13, lineHeight: 19, marginTop: 5 },
+  list: { flex: 1, marginHorizontal: -2 },
+  scrollContent: { paddingHorizontal: 2, paddingBottom: 28, gap: 12 },
 })

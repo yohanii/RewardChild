@@ -103,11 +103,14 @@ export const QuestCard: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   card: {
-    padding: 14,
-    borderRadius: 18,
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: '#1F2937',
+    padding: 17,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 1,
   },
   headerRow: {
     flexDirection: 'row',
@@ -117,7 +120,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    color: '#F9FAFB',
+    color: '#1E293B',
     fontSize: 16,
     fontWeight: '600',
     marginRight: 8,
@@ -133,11 +136,11 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   rewardLabel: {
-    color: '#9CA3AF',
+    color: '#94A3B8',
     fontSize: 11,
   },
   rewardValue: {
-    color: '#FACC15',
+    color: '#2563EB',
     fontSize: 16,
     fontWeight: '700',
     marginTop: 2,
@@ -146,12 +149,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#4B5563',
-    backgroundColor: '#020617',
+    backgroundColor: '#F1F5F9',
   },
   ddayText: {
-    color: '#E5E7EB',
+    color: '#475569',
     fontSize: 12,
     fontWeight: '600',
   },

@@ -65,35 +65,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   statusRegistered: {
-    backgroundColor: '#0B1120',
-    borderWidth: 1,
-    borderColor: '#4B5563',
+    backgroundColor: '#F1F5F9',
   },
   statusRegisteredText: {
-    color: '#E5E7EB',
+    color: '#475569',
   },
   statusRequested: {
-    backgroundColor: '#1F2933',
-    borderWidth: 1,
-    borderColor: '#F97316',
+    backgroundColor: '#FFF7ED',
   },
   statusRequestedText: {
-    color: '#FED7AA',
+    color: '#C2410C',
   },
   statusCompleted: {
-    backgroundColor: '#022C22',
-    borderWidth: 1,
-    borderColor: '#22C55E',
+    backgroundColor: '#ECFDF5',
   },
   statusCompletedText: {
-    color: '#BBF7D0',
+    color: '#047857',
   },
   statusRejected: {
-    backgroundColor: '#450A0A',
-    borderWidth: 1,
-    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
   },
   statusRejectedText: {
-    color: '#FECACA',
+    color: '#B91C1C',
   },
 })

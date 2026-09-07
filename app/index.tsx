@@ -47,9 +47,9 @@ export default function Index() {
         .or(`parent_id.eq.${profile.id},child_id.eq.${profile.id}`)
         .maybeSingle()
 
-      if (relation && relation.status == 'ACTIVE') {
+      if (relation && relation.status === 'ACTIVE') {
         // 관계 있으면 홈으로
-        router.replace('/quests')
+        router.replace('/home')
       } else {
         // 관계 없거나, 연결 중이면 가족 연결 페이지
         router.replace('/relation/connect')

@@ -30,11 +30,14 @@ export function ShopItemCard({ item, purchased }: { item: ShopItem; purchased: b
 
 const styles = StyleSheet.create({
   card: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: '#1F2937',
+    padding: 17,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 1,
   },
   cardPurchased: {
     opacity: 0.75,
@@ -46,18 +49,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: {
-    color: '#F9FAFB',
+    color: '#1E293B',
     fontSize: 16,
     fontWeight: '700',
     flex: 1,
   },
   price: {
-    color: '#E0E7FF',
+    color: '#2563EB',
     fontSize: 14,
     fontWeight: '700',
   },
   content: {
-    color: '#9CA3AF',
+    color: '#64748B',
     fontSize: 13,
     marginTop: 8,
     lineHeight: 18,
@@ -72,18 +75,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 999,
-    borderWidth: 1,
   },
   badgeAvailable: {
-    backgroundColor: '#0B1220',
-    borderColor: '#1F2937',
+    backgroundColor: '#EFF6FF',
   },
   badgePurchased: {
-    backgroundColor: '#0B1220',
-    borderColor: '#374151',
+    backgroundColor: '#F1F5F9',
   },
   badgeText: {
-    color: '#E5E7EB',
+    color: '#475569',
     fontSize: 12,
     fontWeight: '700',
   },

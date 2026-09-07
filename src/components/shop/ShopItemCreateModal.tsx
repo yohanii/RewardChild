@@ -46,7 +46,7 @@ export function ShopItemCreateModal({
           <TextInput
             style={styles.input}
             placeholder="예) 주말 아이스크림 1개"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor="#94A3B8"
             value={title}
             onChangeText={setTitle}
           />
@@ -55,7 +55,7 @@ export function ShopItemCreateModal({
           <TextInput
             style={[styles.input, styles.multiline]}
             placeholder="예) 주말에 아이스크림 1개 먹기"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor="#94A3B8"
             value={content}
             onChangeText={setContent}
             multiline
@@ -65,7 +65,7 @@ export function ShopItemCreateModal({
           <TextInput
             style={styles.input}
             placeholder="예) 10"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor="#94A3B8"
             value={price}
             onChangeText={setPrice}
             keyboardType="number-pad"
@@ -89,34 +89,32 @@ export function ShopItemCreateModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(15,23,42,0.4)',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
   card: {
     borderRadius: 16,
-    backgroundColor: '#0F172A',
-    borderWidth: 1,
-    borderColor: '#1F2937',
+    backgroundColor: '#FFFFFF',
     padding: 16,
   },
   title: {
-    color: '#F9FAFB',
+    color: '#0F172A',
     fontSize: 16,
     fontWeight: '800',
     marginBottom: 12,
   },
   label: {
-    color: '#9CA3AF',
+    color: '#64748B',
     fontSize: 12,
     marginTop: 10,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#1F2937',
-    backgroundColor: '#111827',
-    color: '#F9FAFB',
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    color: '#0F172A',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -139,20 +137,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancel: {
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: '#1F2937',
+    backgroundColor: '#F1F5F9',
   },
   submit: {
-    backgroundColor: '#22C55E',
+    backgroundColor: '#2563EB',
   },
   cancelText: {
-    color: '#E5E7EB',
+    color: '#475569',
     fontSize: 14,
     fontWeight: '700',
   },
   submitText: {
-    color: '#022C22',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
   },

@@ -117,7 +117,7 @@ export const QuestDetailModal: React.FC<Props> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.85)',
+    backgroundColor: 'rgba(15,23,42,0.4)',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
@@ -125,9 +125,7 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     borderRadius: 20,
     padding: 16,
-    backgroundColor: '#020617',
-    borderWidth: 1,
-    borderColor: '#1F2937',
+    backgroundColor: '#FFFFFF',
   },
   headerRow: {
     flexDirection: 'row',
@@ -137,13 +135,13 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    color: '#F9FAFB',
+    color: '#0F172A',
     fontSize: 18,
     fontWeight: '700',
     marginRight: 8,
   },
   closeText: {
-    color: '#9CA3AF',
+    color: '#64748B',
     fontSize: 18,
   },
   statusRow: {
@@ -157,11 +155,11 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   rewardLabel: {
-    color: '#9CA3AF',
+    color: '#94A3B8',
     fontSize: 11,
   },
   rewardValue: {
-    color: '#FACC15',
+    color: '#2563EB',
     fontSize: 15,
     fontWeight: '700',
     marginTop: 2,
@@ -171,12 +169,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#4B5563',
-    backgroundColor: '#020617',
+    backgroundColor: '#F1F5F9',
   },
   ddayText: {
-    color: '#E5E7EB',
+    color: '#475569',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -185,13 +181,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    color: '#D1D5DB',
+    color: '#64748B',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 6,
   },
   contentText: {
-    color: '#E5E7EB',
+    color: '#1E293B',
     fontSize: 14,
     lineHeight: 20,
   },

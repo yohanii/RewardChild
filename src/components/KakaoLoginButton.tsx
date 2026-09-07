@@ -4,12 +4,13 @@ import { supabase } from '../services/supabaseClient'
 
 export default function KakaoLoginButton() {
   const handleLogin = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
         redirectTo: 'rewardchild://auth/callback', // Expo Router redirect
         queryParams: {
-            scope: '',
+          scope: '',
+          ...(__DEV__ ? { prompt: 'login' } : {}),
         },
       },
     })
