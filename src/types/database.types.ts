@@ -285,6 +285,7 @@ export type Database = {
           child_id: number
           created_at: string | null
           id: number
+          idempotency_key: string | null
           price_paid: number
           quantity: number
           shop_item_id: number
@@ -293,6 +294,7 @@ export type Database = {
           child_id: number
           created_at?: string | null
           id?: number
+          idempotency_key?: string | null
           price_paid: number
           quantity?: number
           shop_item_id: number
@@ -301,6 +303,7 @@ export type Database = {
           child_id?: number
           created_at?: string | null
           id?: number
+          idempotency_key?: string | null
           price_paid?: number
           quantity?: number
           shop_item_id?: number
@@ -603,6 +606,24 @@ export type Database = {
         Returns: number
       }
       is_me_user_id: { Args: { target_user_id: number }; Returns: boolean }
+      purchase_shop_item: {
+        Args: { p_idempotency_key: string; p_shop_item_id: number }
+        Returns: {
+          child_id: number
+          created_at: string | null
+          id: number
+          idempotency_key: string | null
+          price_paid: number
+          quantity: number
+          shop_item_id: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shop_purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       reject_quest: {
         Args: { p_quest_id: number }
         Returns: {

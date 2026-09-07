@@ -10,6 +10,7 @@ export function ShopItemCard({
   mutating,
   onEdit,
   onDeactivate,
+  onPurchase,
 }: {
   item: ShopItem
   purchased: boolean
@@ -17,6 +18,7 @@ export function ShopItemCard({
   mutating: boolean
   onEdit?: () => void
   onDeactivate?: () => void
+  onPurchase?: () => void
 }) {
   return (
     <View style={[styles.card, purchased && styles.cardPurchased]}>
@@ -50,7 +52,11 @@ export function ShopItemCard({
               </Pressable>
             ) : null}
           </View>
-        ) : null}
+        ) : (
+          <Pressable style={styles.purchaseButton} onPress={onPurchase} disabled={mutating}>
+            <Text style={styles.purchaseButtonText}>{purchased ? '다시 구매' : '구매하기'}</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   )
@@ -120,4 +126,6 @@ const styles = StyleSheet.create({
   editButtonText: { color: '#1D4ED8', fontSize: 12, fontWeight: '700' },
   deactivateButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FEF2F2' },
   deactivateButtonText: { color: '#B91C1C', fontSize: 12, fontWeight: '700' },
+  purchaseButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 11, backgroundColor: '#2563EB' },
+  purchaseButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
 })

@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 export default function ShopScreen() {
   const {
     profile, balance, loading, mutating, orderedItems, purchasedSet,
-    createItem, updateItem, deactivateItem, reload,
+    createItem, updateItem, deactivateItem, purchaseItem, reload,
   } = useShopScreen()
   const [createVisible, setCreateVisible] = useState(false)
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null)
@@ -69,6 +69,19 @@ export default function ShopScreen() {
                     await deactivateItem(item.id)
                   } catch (error) {
                     showAlert('비활성화 실패', error instanceof Error ? error.message : '다시 시도해주세요.')
+                  }
+                }}
+                onPurchase={async () => {
+                  const confirmed = await confirmAsync(
+                    '상품 구매',
+                    `${item.price.toLocaleString()} COIN으로 구매할까요?`,
+                  )
+                  if (!confirmed) return
+                  try {
+                    const purchased = await purchaseItem(item.id)
+                    if (purchased) showAlert('구매 완료', '구매 내역과 잔액이 반영됐어요.')
+                  } catch (error) {
+                    showAlert('구매 실패', error instanceof Error ? error.message : '잔액과 상품 상태를 확인해주세요.')
                   }
                 }}
               />

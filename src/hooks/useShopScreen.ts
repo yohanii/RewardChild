@@ -2,7 +2,7 @@
 import { supabase } from '@/src/services/supabaseClient'
 import type { Enums, Tables } from '@/src/types/database.types'
 import { router } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 export type Profile = {
   id: number
@@ -33,6 +33,14 @@ type UpdateItemPayload = CreateItemPayload & {
   id: number
 }
 
+function createIdempotencyKey() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+    const random = Math.floor(Math.random() * 16)
+    const value = character === 'x' ? random : (random & 0x3) | 0x8
+    return value.toString(16)
+  })
+}
+
 export function useShopScreen() {
   const [loading, setLoading] = useState(true)
   const [mutating, setMutating] = useState(false)
@@ -43,6 +51,8 @@ export function useShopScreen() {
   const [balance, setBalance] = useState(0)
   const [items, setItems] = useState<ShopItem[]>([])
   const [purchasedSet, setPurchasedSet] = useState<Set<number>>(new Set())
+  const purchaseInFlightRef = useRef(false)
+  const purchaseRetryRef = useRef<{ shopItemId: number; idempotencyKey: string } | null>(null)
 
   useEffect(() => {
     reload()
@@ -127,13 +137,12 @@ export function useShopScreen() {
   const loadBalance = async (userId: number) => {
     const { data, error } = await supabase
         .from('balances')
-        .select('amount')
+        .select('type, amount')
         .eq('user_id', userId)
-        .eq('type', 'CASH')
-        .maybeSingle()
+        .in('type', ['ATTENDANCE', 'CASH'])
 
     if (error) throw error
-    setBalance(data?.amount ?? 0)
+    setBalance((data ?? []).reduce((sum, row) => sum + row.amount, 0))
   }
 
   const loadShopItems = async (p: Profile) => {
@@ -222,6 +231,34 @@ export function useShopScreen() {
     }
   }
 
+  const purchaseItem = async (shopItemId: number) => {
+    if (!profile || profile.role !== 'CHILD' || purchaseInFlightRef.current) return false
+
+    const request =
+      purchaseRetryRef.current?.shopItemId === shopItemId
+        ? purchaseRetryRef.current
+        : { shopItemId, idempotencyKey: createIdempotencyKey() }
+
+    purchaseRetryRef.current = request
+    purchaseInFlightRef.current = true
+
+    try {
+      setMutating(true)
+      const { error } = await supabase.rpc('purchase_shop_item', {
+        p_shop_item_id: shopItemId,
+        p_idempotency_key: request.idempotencyKey,
+      })
+      if (error) throw error
+
+      purchaseRetryRef.current = null
+      await Promise.all([loadBalance(profile.id), loadPurchased(profile.id)])
+      return true
+    } finally {
+      purchaseInFlightRef.current = false
+      setMutating(false)
+    }
+  }
+
   return {
     profile,
     targetChildId,
@@ -235,5 +272,6 @@ export function useShopScreen() {
     createItem,
     updateItem,
     deactivateItem,
+    purchaseItem,
   }
 }
