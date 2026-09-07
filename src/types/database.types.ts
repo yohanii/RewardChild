@@ -663,6 +663,24 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      select_user_role: {
+        Args: { p_role: Database["public"]["Enums"]["user_role"] }
+        Returns: {
+          auth_user_id: string | null
+          created_at: string | null
+          id: number
+          nickname: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          tag: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "users"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       spend_coins: {
         Args: {
           p_amount: number
