@@ -1,9 +1,23 @@
 // src/components/shop/ShopItemCard.tsx
 import type { ShopItem } from '@/src/hooks/useShopScreen';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-export function ShopItemCard({ item, purchased }: { item: ShopItem; purchased: boolean }) {
+export function ShopItemCard({
+  item,
+  purchased,
+  isParent,
+  mutating,
+  onEdit,
+  onDeactivate,
+}: {
+  item: ShopItem
+  purchased: boolean
+  isParent: boolean
+  mutating: boolean
+  onEdit?: () => void
+  onDeactivate?: () => void
+}) {
   return (
     <View style={[styles.card, purchased && styles.cardPurchased]}>
       <View style={styles.headerRow}>
@@ -20,9 +34,23 @@ export function ShopItemCard({ item, purchased }: { item: ShopItem; purchased: b
       )}
 
       <View style={styles.footerRow}>
-        <View style={[styles.badge, purchased ? styles.badgePurchased : styles.badgeAvailable]}>
-          <Text style={styles.badgeText}>{purchased ? '구매함' : '미구매'}</Text>
+        <View style={[styles.badge, item.is_active ? styles.badgeAvailable : styles.badgePurchased]}>
+          <Text style={styles.badgeText}>
+            {isParent ? (item.is_active ? '판매 중' : '비활성') : purchased ? '구매함' : '미구매'}
+          </Text>
         </View>
+        {isParent ? (
+          <View style={styles.actions}>
+            <Pressable style={styles.editButton} onPress={onEdit} disabled={mutating}>
+              <Text style={styles.editButtonText}>수정</Text>
+            </Pressable>
+            {item.is_active ? (
+              <Pressable style={styles.deactivateButton} onPress={onDeactivate} disabled={mutating}>
+                <Text style={styles.deactivateButtonText}>비활성화</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
       </View>
     </View>
   )
@@ -87,4 +115,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  actions: { flexDirection: 'row', gap: 8 },
+  editButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#EFF6FF' },
+  editButtonText: { color: '#1D4ED8', fontSize: 12, fontWeight: '700' },
+  deactivateButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FEF2F2' },
+  deactivateButtonText: { color: '#B91C1C', fontSize: 12, fontWeight: '700' },
 })

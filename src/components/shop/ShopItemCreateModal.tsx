@@ -7,11 +7,13 @@ export function ShopItemCreateModal({
   mutating,
   onClose,
   onSubmit,
+  initialItem,
 }: {
   visible: boolean
   mutating: boolean
   onClose: () => void
   onSubmit: (payload: { title: string; content?: string; price: number }) => Promise<void> | void
+  initialItem?: { title: string; content: string | null; price: number }
 }) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -20,10 +22,10 @@ export function ShopItemCreateModal({
   useEffect(() => {
     if (!visible) return
     // 열릴 때 초기화하고 싶으면 아래 유지
-    setTitle('')
-    setContent('')
-    setPrice('')
-  }, [visible])
+    setTitle(initialItem?.title ?? '')
+    setContent(initialItem?.content ?? '')
+    setPrice(initialItem ? String(initialItem.price) : '')
+  }, [initialItem, visible])
 
   const submit = async () => {
     const t = title.trim()
@@ -40,7 +42,7 @@ export function ShopItemCreateModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>아이템 등록</Text>
+          <Text style={styles.title}>{initialItem ? '아이템 수정' : '아이템 등록'}</Text>
 
           <Text style={styles.label}>제목</Text>
           <TextInput
@@ -77,7 +79,9 @@ export function ShopItemCreateModal({
             </Pressable>
 
             <Pressable style={[styles.button, styles.submit]} onPress={submit} disabled={mutating}>
-              <Text style={styles.submitText}>{mutating ? '등록 중...' : '등록'}</Text>
+              <Text style={styles.submitText}>
+                {mutating ? '저장 중...' : initialItem ? '저장' : '등록'}
+              </Text>
             </Pressable>
           </View>
         </View>

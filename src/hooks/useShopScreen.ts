@@ -29,6 +29,10 @@ type CreateItemPayload = {
   price: number
 }
 
+type UpdateItemPayload = CreateItemPayload & {
+  id: number
+}
+
 export function useShopScreen() {
   const [loading, setLoading] = useState(true)
   const [mutating, setMutating] = useState(false)
@@ -66,7 +70,7 @@ export function useShopScreen() {
       const childId = await resolveTargetChildId(p)
       setTargetChildId(childId)
 
-      await Promise.all([loadBalance(childId), loadShopItems(), loadPurchased(childId)])
+      await Promise.all([loadBalance(childId), loadShopItems(p), loadPurchased(childId)])
     } catch (e) {
       console.warn('useShopScreen.reload error', e)
     } finally {
@@ -132,11 +136,16 @@ export function useShopScreen() {
     setBalance(data?.amount ?? 0)
   }
 
-  const loadShopItems = async () => {
-    const { data, error } = await supabase
+  const loadShopItems = async (p: Profile) => {
+    let query = supabase
       .from('shop_items')
       .select('id, parent_id, title, content, price, is_active, sort_order, created_at, updated_at')
-      .eq('is_active', true)
+
+    if (p.role === 'CHILD') {
+      query = query.eq('is_active', true)
+    }
+
+    const { data, error } = await query
       .order('sort_order', { ascending: false })
       .order('id', { ascending: false })
 
@@ -168,14 +177,46 @@ export function useShopScreen() {
 
     try {
       setMutating(true)
-      const { error } = await supabase.from('shop_items').insert({
-        parent_id: profile.id,
-        title,
-        content: content.length ? content : null,
-        price,
+      const { error } = await supabase.rpc('create_shop_item', {
+        p_title: title,
+        p_content: content,
+        p_price: price,
       })
       if (error) throw error
-      await loadShopItems()
+      await loadShopItems(profile)
+    } finally {
+      setMutating(false)
+    }
+  }
+
+  const updateItem = async (payload: UpdateItemPayload) => {
+    if (!profile || profile.role !== 'PARENT') return
+
+    try {
+      setMutating(true)
+      const { error } = await supabase.rpc('update_shop_item', {
+        p_shop_item_id: payload.id,
+        p_title: payload.title.trim(),
+        p_content: (payload.content ?? '').trim(),
+        p_price: payload.price,
+      })
+      if (error) throw error
+      await loadShopItems(profile)
+    } finally {
+      setMutating(false)
+    }
+  }
+
+  const deactivateItem = async (shopItemId: number) => {
+    if (!profile || profile.role !== 'PARENT') return
+
+    try {
+      setMutating(true)
+      const { error } = await supabase.rpc('deactivate_shop_item', {
+        p_shop_item_id: shopItemId,
+      })
+      if (error) throw error
+      await loadShopItems(profile)
     } finally {
       setMutating(false)
     }
@@ -192,5 +233,7 @@ export function useShopScreen() {
     purchasedSet,
     reload,
     createItem,
+    updateItem,
+    deactivateItem,
   }
 }

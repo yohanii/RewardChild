@@ -526,6 +526,48 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_shop_item: {
+        Args: { p_content: string; p_price: number; p_title: string }
+        Returns: {
+          content: string | null
+          created_at: string | null
+          currency: Database["public"]["Enums"]["currency_unit"]
+          id: number
+          is_active: boolean
+          parent_id: number
+          price: number
+          sort_order: number
+          title: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shop_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      deactivate_shop_item: {
+        Args: { p_shop_item_id: number }
+        Returns: {
+          content: string | null
+          created_at: string | null
+          currency: Database["public"]["Enums"]["currency_unit"]
+          id: number
+          is_active: boolean
+          parent_id: number
+          price: number
+          sort_order: number
+          title: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shop_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_quest_with_refund: {
         Args: { p_quest_id: number }
         Returns: {
@@ -632,6 +674,32 @@ export type Database = {
         Returns: undefined
       }
       uid_to_user_id: { Args: { uid: string }; Returns: number }
+      update_shop_item: {
+        Args: {
+          p_content: string
+          p_price: number
+          p_shop_item_id: number
+          p_title: string
+        }
+        Returns: {
+          content: string | null
+          created_at: string | null
+          currency: Database["public"]["Enums"]["currency_unit"]
+          id: number
+          is_active: boolean
+          parent_id: number
+          price: number
+          sort_order: number
+          title: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shop_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       balance_type: "ATTENDANCE" | "CASH"

@@ -2,14 +2,20 @@ import { BalanceCard } from '@/src/components/common/BalanceCard'
 import { ScreenHeader } from '@/src/components/common/ScreenHeader'
 import { ShopItemCard } from '@/src/components/shop/ShopItemCard'
 import { ShopItemCreateModal } from '@/src/components/shop/ShopItemCreateModal'
-import { useShopScreen } from '@/src/hooks/useShopScreen'
+import { type ShopItem, useShopScreen } from '@/src/hooks/useShopScreen'
+import { confirmAsync } from '@/src/utils/confirmAsync'
+import { showAlert } from '@/src/utils/alert'
 import React, { useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function ShopScreen() {
-  const { profile, balance, loading, mutating, orderedItems, purchasedSet, createItem, reload } = useShopScreen()
+  const {
+    profile, balance, loading, mutating, orderedItems, purchasedSet,
+    createItem, updateItem, deactivateItem, reload,
+  } = useShopScreen()
   const [createVisible, setCreateVisible] = useState(false)
+  const [editingItem, setEditingItem] = useState<ShopItem | null>(null)
 
   if (loading && !profile) {
     return <View style={styles.loadingContainer}><ActivityIndicator color="#2563EB" /></View>
@@ -45,7 +51,28 @@ export default function ShopScreen() {
           </View>
         ) : (
           <ScrollView style={styles.list} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            {orderedItems.map((item) => <ShopItemCard key={item.id} item={item} purchased={purchasedSet.has(item.id)} />)}
+            {orderedItems.map((item) => (
+              <ShopItemCard
+                key={item.id}
+                item={item}
+                purchased={purchasedSet.has(item.id)}
+                isParent={isParent}
+                mutating={mutating}
+                onEdit={() => setEditingItem(item)}
+                onDeactivate={async () => {
+                  const confirmed = await confirmAsync(
+                    '상품 비활성화',
+                    '자녀의 상점에서 이 상품을 숨길까요?',
+                  )
+                  if (!confirmed) return
+                  try {
+                    await deactivateItem(item.id)
+                  } catch (error) {
+                    showAlert('비활성화 실패', error instanceof Error ? error.message : '다시 시도해주세요.')
+                  }
+                }}
+              />
+            ))}
           </ScrollView>
         )}
       </View>
@@ -55,9 +82,28 @@ export default function ShopScreen() {
         mutating={mutating}
         onClose={() => setCreateVisible(false)}
         onSubmit={async (payload) => {
-          await createItem(payload)
-          setCreateVisible(false)
-          await reload()
+          try {
+            await createItem(payload)
+            setCreateVisible(false)
+            await reload()
+          } catch (error) {
+            showAlert('상품 등록 실패', error instanceof Error ? error.message : '다시 시도해주세요.')
+          }
+        }}
+      />
+      <ShopItemCreateModal
+        visible={editingItem !== null}
+        mutating={mutating}
+        initialItem={editingItem ?? undefined}
+        onClose={() => setEditingItem(null)}
+        onSubmit={async (payload) => {
+          if (!editingItem) return
+          try {
+            await updateItem({ id: editingItem.id, ...payload })
+            setEditingItem(null)
+          } catch (error) {
+            showAlert('상품 수정 실패', error instanceof Error ? error.message : '다시 시도해주세요.')
+          }
         }}
       />
     </SafeAreaView>
