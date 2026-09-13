@@ -1,21 +1,14 @@
 import {
   BANK_PRODUCT_IDS,
-  createGooglePlayObfuscatedAccountId,
-  isBankProductId,
-  verifyGooglePlayPurchase,
 } from '@/src/services/googlePlayBilling'
 import { supabase } from '@/src/services/supabaseClient'
 import type { Enums, Tables } from '@/src/types/database.types'
-import {
-  ErrorCode,
-  isUserCancelledError,
-  useIAP,
-  type ExpoPurchaseError,
-  type Purchase,
-} from 'expo-iap'
 import { router, useFocusEffect } from 'expo-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AppState, Platform } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
+import {
+  useBankBillingProvider,
+  type BankBillingErrorKind,
+} from './useBankBillingProvider'
 
 export type BankItem = Pick<
   Tables<'bank_items'>,
@@ -43,21 +36,17 @@ export type BankFeedback = {
   message: string
 }
 
-function billingErrorFeedback(error: ExpoPurchaseError): BankFeedback {
-  if (isUserCancelledError(error) || error.code === ErrorCode.UserCancelled) {
+function billingErrorFeedback(kind: BankBillingErrorKind): BankFeedback {
+  if (kind === 'cancelled') {
     return { tone: 'info', message: '결제가 취소되었어요.' }
   }
-  if (error.code === ErrorCode.Pending) {
+  if (kind === 'pending') {
     return {
       tone: 'info',
       message: '결제가 처리 중입니다. 완료되면 CASH에 반영돼요.',
     }
   }
-  if (
-    error.code === ErrorCode.NetworkError ||
-    error.code === ErrorCode.ServiceDisconnected ||
-    error.code === ErrorCode.ServiceTimeout
-  ) {
+  if (kind === 'network') {
     return {
       tone: 'error',
       message: '네트워크 연결을 확인한 뒤 다시 시도해 주세요.',
@@ -65,7 +54,7 @@ function billingErrorFeedback(error: ExpoPurchaseError): BankFeedback {
   }
   return {
     tone: 'error',
-    message: 'Google Play 결제를 시작하지 못했어요. 잠시 후 다시 시도해 주세요.',
+    message: '결제를 처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
   }
 }
 
@@ -78,8 +67,6 @@ export function useBankScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [processingProductId, setProcessingProductId] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<BankFeedback | null>(null)
-  const processingTokensRef = useRef(new Set<string>())
-  const activeProductIdsRef = useRef(new Set<string>())
 
   const loadBankData = useCallback(async (showLoading = false) => {
     if (showLoading) setLoading(true)
@@ -142,9 +129,6 @@ export function useBankScreen() {
     })
 
     const nextItems = itemResult.data ?? []
-    activeProductIdsRef.current = new Set(
-      nextItems.flatMap((item) => item.google_play_product_id ?? []),
-    )
     setItems(nextItems)
     setPurchases(purchaseResult.data ?? [])
   }, [])
@@ -163,130 +147,51 @@ export function useBankScreen() {
     }
   }, [loadBankData])
 
-  const processPurchase = useCallback(async (purchase: Purchase) => {
-    if (!isBankProductId(purchase.productId)) return
-
-    if (purchase.purchaseState === 'pending') {
-      setProcessingProductId(null)
-      setFeedback({
-        tone: 'info',
-        message: '결제가 처리 중입니다. 결제 완료 후 자동으로 반영됩니다.',
-      })
-      return
-    }
-
-    if (purchase.purchaseState !== 'purchased' || !purchase.purchaseToken) {
-      setProcessingProductId(null)
-      setFeedback({
-        tone: 'error',
-        message: 'Google Play 구매 정보를 확인하지 못했어요.',
-      })
-      return
-    }
-
-    if (!activeProductIdsRef.current.has(purchase.productId)) return
-    if (processingTokensRef.current.has(purchase.purchaseToken)) return
-
-    processingTokensRef.current.add(purchase.purchaseToken)
-    setProcessingProductId(purchase.productId)
-    setFeedback({ tone: 'info', message: '결제를 안전하게 확인하고 있어요.' })
-
-    try {
-      const { data, error } = await verifyGooglePlayPurchase(
-        purchase.productId,
-        purchase.purchaseToken,
-      )
-      if (error || !data) throw error ?? new Error('EMPTY_VERIFICATION_RESPONSE')
-
-      if (data.status === 'PENDING') {
-        setFeedback({
-          tone: 'info',
-          message: '결제가 처리 중입니다. 결제 완료 후 자동으로 반영됩니다.',
-        })
-        return
-      }
-
-      if (data.status !== 'PAID') throw new Error('PURCHASE_NOT_PAID')
-
-      await loadBankData()
-      setFeedback({
-        tone: 'success',
-        message: data.consumeStatus === 'CONSUMED'
-          ? `${data.cashGranted.toLocaleString()} CASH가 충전되었어요.`
-          : `${data.cashGranted.toLocaleString()} CASH가 반영되었어요. 결제 마무리는 자동으로 재시도됩니다.`,
-      })
-    } catch (error) {
-      const isNetworkError = error instanceof Error &&
-        (error.name === 'FunctionsFetchError' || error.name === 'FunctionsRelayError')
-      setFeedback({
-        tone: 'error',
-        message: isNetworkError
-          ? '네트워크 연결 후 결제 내역을 다시 확인해 주세요.'
-          : '서버에서 결제를 확인하지 못했어요. 결제 내역 확인을 다시 시도해 주세요.',
-      })
-    } finally {
-      processingTokensRef.current.delete(purchase.purchaseToken)
-      setProcessingProductId(null)
-    }
+  const handlePurchaseSuccess = useCallback(async (result: {
+    cashGranted: number
+    consumeStatus: 'NOT_STARTED' | 'PENDING' | 'FAILED' | 'CONSUMED'
+  }) => {
+    await loadBankData()
+    setProcessingProductId(null)
+    setFeedback({
+      tone: 'success',
+      message: result.consumeStatus === 'CONSUMED'
+        ? `${result.cashGranted.toLocaleString()} CASH가 충전되었어요.`
+        : `${result.cashGranted.toLocaleString()} CASH가 반영되었어요. 결제 마무리는 자동으로 재시도됩니다.`,
+    })
   }, [loadBankData])
 
-  const handlePurchaseError = useCallback((error: ExpoPurchaseError) => {
+  const handlePurchaseError = useCallback((kind: BankBillingErrorKind) => {
     setProcessingProductId(null)
-    setFeedback(billingErrorFeedback(error))
+    setFeedback(billingErrorFeedback(kind))
   }, [])
 
+  const productIds = useMemo(
+    () => items.flatMap((item) => item.google_play_product_id ?? []),
+    [items],
+  )
+
   const {
+    mode: billingMode,
     connected,
-    products,
-    availablePurchases,
-    fetchProducts,
-    getAvailablePurchases,
-    requestPurchase,
-    reconnect,
-  } = useIAP({
-    onPurchaseSuccess: (purchase) => {
-      void processPurchase(purchase)
-    },
-    onPurchaseError: handlePurchaseError,
-    onError: () => {
-      setFeedback({
-        tone: 'error',
-        message: 'Google Play 결제 정보를 불러오지 못했어요.',
-      })
-    },
+    products: storeProducts,
+    purchase: purchaseWithProvider,
+    recover: recoverWithProvider,
+    reconnect: reconnectProvider,
+  } = useBankBillingProvider({
+    authUserId: profile?.authUserId,
+    productIds,
+    onSuccess: handlePurchaseSuccess,
+    onError: handlePurchaseError,
   })
 
   const recoverPurchases = useCallback(async () => {
-    if (Platform.OS !== 'android' || !connected) return
     try {
-      await getAvailablePurchases()
+      await recoverWithProvider()
     } catch {
-      // The hook's onError callback displays a safe, token-free message.
+      handlePurchaseError('network')
     }
-  }, [connected, getAvailablePurchases])
-
-  useEffect(() => {
-    if (Platform.OS !== 'android' || !connected || items.length === 0) return
-
-    const productIds = items.flatMap((item) => item.google_play_product_id ?? [])
-    void fetchProducts({ skus: productIds, type: 'in-app' }).catch(() => {
-      // The hook's onError callback displays a safe, token-free message.
-    })
-  }, [connected, fetchProducts, items])
-
-  useEffect(() => {
-    if (availablePurchases.length === 0) return
-    for (const purchase of availablePurchases) {
-      void processPurchase(purchase)
-    }
-  }, [availablePurchases, processPurchase])
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void recoverPurchases()
-    })
-    return () => subscription.remove()
-  }, [recoverPurchases])
+  }, [handlePurchaseError, recoverWithProvider])
 
   useFocusEffect(
     useCallback(() => {
@@ -310,49 +215,37 @@ export function useBankScreen() {
     }, [loadBankData, recoverPurchases]),
   )
 
-  const storeProducts = useMemo(
-    () => new Map(products.map((product) => [product.id, product])),
-    [products],
-  )
-
   const purchaseProduct = useCallback(async (item: BankItem) => {
-    if (Platform.OS !== 'android') {
-      setFeedback({ tone: 'info', message: 'CASH 충전은 Android 앱에서 이용할 수 있어요.' })
-      return
-    }
     if (!profile || profile.role !== 'PARENT' || !item.google_play_product_id) return
     if (!storeProducts.has(item.google_play_product_id)) {
-      setFeedback({ tone: 'error', message: 'Google Play에서 이 상품을 찾지 못했어요.' })
+      setFeedback({ tone: 'error', message: '결제 provider에서 이 상품을 찾지 못했어요.' })
       return
     }
 
     try {
       setProcessingProductId(item.google_play_product_id)
-      setFeedback({ tone: 'info', message: 'Google Play 결제창을 열고 있어요.' })
-      const obfuscatedAccountId = await createGooglePlayObfuscatedAccountId(profile.authUserId)
-      await requestPurchase({
-        request: {
-          google: {
-            skus: [item.google_play_product_id],
-            obfuscatedAccountId,
-          },
-        },
-        type: 'in-app',
+      setFeedback({
+        tone: 'info',
+        message: billingMode === 'mock'
+          ? '개발용 Mock 결제를 처리하고 있어요.'
+          : 'Google Play 결제창을 열고 있어요.',
       })
-    } catch (error) {
-      handlePurchaseError(error as ExpoPurchaseError)
+      await purchaseWithProvider(item.google_play_product_id)
+    } catch {
+      handlePurchaseError('failed')
     }
-  }, [handlePurchaseError, profile, requestPurchase, storeProducts])
+  }, [billingMode, handlePurchaseError, profile, purchaseWithProvider, storeProducts])
 
   const reconnectBilling = useCallback(async () => {
-    const reconnected = await reconnect().catch(() => false)
+    const reconnected = await reconnectProvider().catch(() => false)
     if (!reconnected) {
       setFeedback({ tone: 'error', message: 'Google Play에 연결하지 못했어요.' })
     }
-  }, [reconnect])
+  }, [reconnectProvider])
 
   return {
     balance,
+    billingMode,
     connected,
     feedback,
     items,

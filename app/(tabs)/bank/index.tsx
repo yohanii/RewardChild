@@ -43,6 +43,7 @@ function FeedbackBanner({ feedback }: { feedback: BankFeedback }) {
 export default function BankScreen() {
   const {
     balance,
+    billingMode,
     connected,
     feedback,
     items,
@@ -72,7 +73,19 @@ export default function BankScreen() {
         )}
       >
         <View style={styles.content}>
-          <ScreenHeader title="Bank" subtitle="Google Play에서 CASH를 안전하게 충전해요." />
+          <ScreenHeader
+            title="Bank"
+            subtitle={billingMode === 'mock'
+              ? '개발용 서버 경로로 CASH 충전 UX를 테스트해요.'
+              : 'Google Play에서 CASH를 안전하게 충전해요.'}
+          />
+
+          {billingMode === 'mock' ? (
+            <View style={styles.mockBadge}>
+              <Ionicons name="flask-outline" size={14} color="#9A3412" />
+              <Text style={styles.mockBadgeText}>개발용 Mock 결제</Text>
+            </View>
+          ) : null}
 
           <BalanceCard
             label="현재 보유 재화"
@@ -86,7 +99,7 @@ export default function BankScreen() {
 
           {feedback ? <FeedbackBanner feedback={feedback} /> : null}
 
-          {Platform.OS !== 'android' ? (
+          {billingMode === 'google-play' && Platform.OS !== 'android' ? (
             <View style={styles.noticeCard}>
               <View style={styles.noticeIcon}>
                 <Ionicons name="logo-google-playstore" size={22} color="#2563EB" />
@@ -96,7 +109,7 @@ export default function BankScreen() {
                 <Text style={styles.noticeDescription}>실제 구매는 Android development build에서 확인할 수 있어요.</Text>
               </View>
             </View>
-          ) : !connected ? (
+          ) : billingMode === 'google-play' && !connected ? (
             <Pressable style={styles.noticeCard} onPress={reconnectBilling}>
               <View style={styles.noticeIcon}><Ionicons name="refresh" size={22} color="#2563EB" /></View>
               <View style={styles.noticeCopy}>
@@ -109,7 +122,9 @@ export default function BankScreen() {
           <View style={styles.section}>
             <View>
               <Text style={styles.sectionTitle}>CASH 충전</Text>
-              <Text style={styles.sectionSubtitle}>가격은 Google Play 기준으로 표시돼요.</Text>
+              <Text style={styles.sectionSubtitle}>
+                {billingMode === 'mock' ? 'DB의 활성 Bank 상품 설정으로 지급해요.' : '가격은 Google Play 기준으로 표시돼요.'}
+              </Text>
             </View>
 
             <View style={styles.productList}>
@@ -141,7 +156,9 @@ export default function BankScreen() {
                     >
                       {isProcessing ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
                         <Text style={styles.purchaseButtonText}>
-                          {storeProduct ? 'Google Play로 구매' : '상품 확인 중'}
+                          {storeProduct
+                            ? billingMode === 'mock' ? 'Mock으로 구매' : 'Google Play로 구매'
+                            : '상품 확인 중'}
                         </Text>
                       )}
                     </Pressable>
@@ -157,7 +174,7 @@ export default function BankScreen() {
                 <Text style={styles.sectionTitle}>최근 충전 내역</Text>
                 <Text style={styles.sectionSubtitle}>최근 결제 10건을 확인할 수 있어요.</Text>
               </View>
-              {connected ? (
+              {connected && billingMode === 'google-play' ? (
                 <Pressable style={styles.historyRefresh} onPress={recoverPurchases}>
                   <Ionicons name="refresh" size={16} color="#2563EB" />
                   <Text style={styles.historyRefreshText}>결제 확인</Text>
@@ -202,7 +219,11 @@ export default function BankScreen() {
             )}
           </View>
 
-          <Text style={styles.footnote}>결제 완료와 CASH 지급은 서버에서 Google Play 구매를 확인한 뒤 처리됩니다.</Text>
+          <Text style={styles.footnote}>
+            {billingMode === 'mock'
+              ? '개발 전용 서버가 DB 상품을 확인한 뒤 Mock 구매와 CASH 지급을 함께 처리합니다.'
+              : '결제 완료와 CASH 지급은 서버에서 Google Play 구매를 확인한 뒤 처리됩니다.'}
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -215,6 +236,8 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 34 },
   content: { width: '100%', maxWidth: 640, alignSelf: 'center', gap: 22 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F7FB' },
+  mockBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: '#FFEDD5' },
+  mockBadgeText: { color: '#9A3412', fontSize: 11, fontWeight: '800' },
   feedback: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 16, backgroundColor: '#EFF6FF' },
   feedbackSuccess: { backgroundColor: '#F0FDF4' },
   feedbackError: { backgroundColor: '#FEF2F2' },

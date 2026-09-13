@@ -129,6 +129,7 @@ export type Database = {
           paid_at: string | null
           parent_id: number
           price_krw_snapshot: number
+          provider: Database["public"]["Enums"]["bank_purchase_provider"]
           refunded_at: string | null
           status: Database["public"]["Enums"]["bank_purchase_status"]
         }
@@ -149,6 +150,7 @@ export type Database = {
           paid_at?: string | null
           parent_id: number
           price_krw_snapshot: number
+          provider?: Database["public"]["Enums"]["bank_purchase_provider"]
           refunded_at?: string | null
           status?: Database["public"]["Enums"]["bank_purchase_status"]
         }
@@ -169,6 +171,7 @@ export type Database = {
           paid_at?: string | null
           parent_id?: number
           price_krw_snapshot?: number
+          provider?: Database["public"]["Enums"]["bank_purchase_provider"]
           refunded_at?: string | null
           status?: Database["public"]["Enums"]["bank_purchase_status"]
         }
@@ -560,6 +563,41 @@ export type Database = {
           paid_at: string | null
           parent_id: number
           price_krw_snapshot: number
+          provider: Database["public"]["Enums"]["bank_purchase_provider"]
+          refunded_at: string | null
+          status: Database["public"]["Enums"]["bank_purchase_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bank_purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_mock_bank_purchase: {
+        Args: {
+          p_idempotency_key: string
+          p_parent_auth_user_id: string
+          p_product_id: string
+        }
+        Returns: {
+          bank_item_id: number
+          cancelled_at: string | null
+          cash_granted: number
+          consume_attempt_count: number
+          consume_last_attempt_at: string | null
+          consume_last_error_code: string | null
+          consume_status: Database["public"]["Enums"]["google_play_consume_status"]
+          consumed_at: string | null
+          created_at: string | null
+          currency: Database["public"]["Enums"]["currency_unit"]
+          google_order_id: string | null
+          google_play_product_id_snapshot: string | null
+          id: number
+          paid_at: string | null
+          parent_id: number
+          price_krw_snapshot: number
+          provider: Database["public"]["Enums"]["bank_purchase_provider"]
           refunded_at: string | null
           status: Database["public"]["Enums"]["bank_purchase_status"]
         }
@@ -700,6 +738,7 @@ export type Database = {
           paid_at: string | null
           parent_id: number
           price_krw_snapshot: number
+          provider: Database["public"]["Enums"]["bank_purchase_provider"]
           refunded_at: string | null
           status: Database["public"]["Enums"]["bank_purchase_status"]
         }
@@ -786,6 +825,7 @@ export type Database = {
           paid_at: string | null
           parent_id: number
           price_krw_snapshot: number
+          provider: Database["public"]["Enums"]["bank_purchase_provider"]
           refunded_at: string | null
           status: Database["public"]["Enums"]["bank_purchase_status"]
         }
@@ -914,6 +954,7 @@ export type Database = {
     }
     Enums: {
       balance_type: "ATTENDANCE" | "CASH"
+      bank_purchase_provider: "GOOGLE_PLAY" | "MOCK"
       bank_purchase_status: "PENDING" | "PAID" | "CANCELLED" | "REFUNDED"
       currency_unit: "COIN" | "KRW"
       google_play_consume_status:
@@ -1068,6 +1109,7 @@ export const Constants = {
   public: {
     Enums: {
       balance_type: ["ATTENDANCE", "CASH"],
+      bank_purchase_provider: ["GOOGLE_PLAY", "MOCK"],
       bank_purchase_status: ["PENDING", "PAID", "CANCELLED", "REFUNDED"],
       currency_unit: ["COIN", "KRW"],
       google_play_consume_status: [
