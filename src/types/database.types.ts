@@ -284,29 +284,35 @@ export type Database = {
         Row: {
           child_id: number
           created_at: string | null
+          fulfilled_at: string | null
           id: number
           idempotency_key: string | null
           price_paid: number
           quantity: number
           shop_item_id: number
+          status: Database["public"]["Enums"]["shop_purchase_status"]
         }
         Insert: {
           child_id: number
           created_at?: string | null
+          fulfilled_at?: string | null
           id?: number
           idempotency_key?: string | null
           price_paid: number
           quantity?: number
           shop_item_id: number
+          status?: Database["public"]["Enums"]["shop_purchase_status"]
         }
         Update: {
           child_id?: number
           created_at?: string | null
+          fulfilled_at?: string | null
           id?: number
           idempotency_key?: string | null
           price_paid?: number
           quantity?: number
           shop_item_id?: number
+          status?: Database["public"]["Enums"]["shop_purchase_status"]
         }
         Relationships: [
           {
@@ -601,6 +607,26 @@ export type Database = {
           tag: string
         }[]
       }
+      fulfill_shop_purchase: {
+        Args: { p_shop_purchase_id: number }
+        Returns: {
+          child_id: number
+          created_at: string | null
+          fulfilled_at: string | null
+          id: number
+          idempotency_key: string | null
+          price_paid: number
+          quantity: number
+          shop_item_id: number
+          status: Database["public"]["Enums"]["shop_purchase_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shop_purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       give_attendance: {
         Args: { p_cap?: number; p_user_id: number }
         Returns: number
@@ -611,11 +637,13 @@ export type Database = {
         Returns: {
           child_id: number
           created_at: string | null
+          fulfilled_at: string | null
           id: number
           idempotency_key: string | null
           price_paid: number
           quantity: number
           shop_item_id: number
+          status: Database["public"]["Enums"]["shop_purchase_status"]
         }
         SetofOptions: {
           from: "*"
@@ -746,6 +774,7 @@ export type Database = {
       quest_status: "REGISTERED" | "REQUESTED" | "COMPLETED" | "REJECTED"
       reference_type: "QUEST" | "SHOP_PURCHASE" | "BANK_PURCHASE"
       relation_status: "PENDING" | "ACTIVE" | "BLOCKED"
+      shop_purchase_status: "PURCHASED" | "FULFILLED"
       transaction_type:
         | "QUEST_REWARD"
         | "SHOP_PURCHASE"
@@ -893,6 +922,7 @@ export const Constants = {
       quest_status: ["REGISTERED", "REQUESTED", "COMPLETED", "REJECTED"],
       reference_type: ["QUEST", "SHOP_PURCHASE", "BANK_PURCHASE"],
       relation_status: ["PENDING", "ACTIVE", "BLOCKED"],
+      shop_purchase_status: ["PURCHASED", "FULFILLED"],
       transaction_type: [
         "QUEST_REWARD",
         "SHOP_PURCHASE",

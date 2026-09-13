@@ -23,6 +23,18 @@ export type ShopItem = Pick<
   | 'updated_at'
 >
 
+export type ShopPurchase = Pick<
+  Tables<'shop_purchases'>,
+  | 'id'
+  | 'child_id'
+  | 'shop_item_id'
+  | 'price_paid'
+  | 'quantity'
+  | 'status'
+  | 'created_at'
+  | 'fulfilled_at'
+>
+
 type CreateItemPayload = {
   title: string
   content?: string
@@ -50,7 +62,7 @@ export function useShopScreen() {
 
   const [balance, setBalance] = useState(0)
   const [items, setItems] = useState<ShopItem[]>([])
-  const [purchasedSet, setPurchasedSet] = useState<Set<number>>(new Set())
+  const [purchases, setPurchases] = useState<ShopPurchase[]>([])
   const purchaseInFlightRef = useRef(false)
   const purchaseRetryRef = useRef<{ shopItemId: number; idempotencyKey: string } | null>(null)
 
@@ -58,6 +70,11 @@ export function useShopScreen() {
     reload()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const purchasedSet = useMemo(
+    () => new Set(purchases.map((purchase) => purchase.shop_item_id)),
+    [purchases],
+  )
 
   const orderedItems = useMemo(() => {
     // ✅ “미구매 먼저, 구매한 건 아래” 정렬
@@ -80,7 +97,7 @@ export function useShopScreen() {
       const childId = await resolveTargetChildId(p)
       setTargetChildId(childId)
 
-      await Promise.all([loadBalance(childId), loadShopItems(p), loadPurchased(childId)])
+      await Promise.all([loadBalance(childId), loadShopItems(p), loadPurchases(p)])
     } catch (e) {
       console.warn('useShopScreen.reload error', e)
     } finally {
@@ -162,16 +179,19 @@ export function useShopScreen() {
     setItems(data ?? [])
   }
 
-  const loadPurchased = async (childId: number) => {
-    const { data, error } = await supabase
+  const loadPurchases = async (p: Profile) => {
+    let query = supabase
       .from('shop_purchases')
-      .select('shop_item_id')
-      .eq('child_id', childId)
+      .select('id, child_id, shop_item_id, price_paid, quantity, status, created_at, fulfilled_at')
+
+    if (p.role === 'CHILD') {
+      query = query.eq('child_id', p.id)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false })
 
     if (error) throw error
-    const set = new Set<number>()
-    ;(data ?? []).forEach((r) => set.add(r.shop_item_id))
-    setPurchasedSet(set)
+    setPurchases(data ?? [])
   }
 
   const createItem = async (payload: CreateItemPayload) => {
@@ -251,10 +271,25 @@ export function useShopScreen() {
       if (error) throw error
 
       purchaseRetryRef.current = null
-      await Promise.all([loadBalance(profile.id), loadPurchased(profile.id)])
+      await Promise.all([loadBalance(profile.id), loadPurchases(profile)])
       return true
     } finally {
       purchaseInFlightRef.current = false
+      setMutating(false)
+    }
+  }
+
+  const fulfillPurchase = async (shopPurchaseId: number) => {
+    if (!profile || profile.role !== 'PARENT') return
+
+    try {
+      setMutating(true)
+      const { error } = await supabase.rpc('fulfill_shop_purchase', {
+        p_shop_purchase_id: shopPurchaseId,
+      })
+      if (error) throw error
+      await loadPurchases(profile)
+    } finally {
       setMutating(false)
     }
   }
@@ -267,11 +302,13 @@ export function useShopScreen() {
     mutating,
     items,
     orderedItems,
+    purchases,
     purchasedSet,
     reload,
     createItem,
     updateItem,
     deactivateItem,
     purchaseItem,
+    fulfillPurchase,
   }
 }
