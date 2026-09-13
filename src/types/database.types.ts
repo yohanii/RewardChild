@@ -68,32 +68,44 @@ export type Database = {
       }
       bank_items: {
         Row: {
+          cash_amount: number
           content: string | null
           created_at: string | null
-          currency: Database["public"]["Enums"]["currency_unit"] | null
+          currency: Database["public"]["Enums"]["currency_unit"]
+          google_play_product_id: string | null
           id: number
+          is_active: boolean
           parent_id: number | null
-          price: number
+          price_krw: number
+          sort_order: number
           title: string
           updated_at: string | null
         }
         Insert: {
+          cash_amount?: number
           content?: string | null
           created_at?: string | null
-          currency?: Database["public"]["Enums"]["currency_unit"] | null
+          currency?: Database["public"]["Enums"]["currency_unit"]
+          google_play_product_id?: string | null
           id?: number
+          is_active?: boolean
           parent_id?: number | null
-          price: number
+          price_krw: number
+          sort_order?: number
           title: string
           updated_at?: string | null
         }
         Update: {
+          cash_amount?: number
           content?: string | null
           created_at?: string | null
-          currency?: Database["public"]["Enums"]["currency_unit"] | null
+          currency?: Database["public"]["Enums"]["currency_unit"]
+          google_play_product_id?: string | null
           id?: number
+          is_active?: boolean
           parent_id?: number | null
-          price?: number
+          price_krw?: number
+          sort_order?: number
           title?: string
           updated_at?: string | null
         }
@@ -101,31 +113,49 @@ export type Database = {
       }
       bank_purchases: {
         Row: {
-          amount: number
           bank_item_id: number
-          coins_granted: number
+          cancelled_at: string | null
+          cash_granted: number
           created_at: string | null
-          currency: Database["public"]["Enums"]["currency_unit"] | null
+          currency: Database["public"]["Enums"]["currency_unit"]
+          google_order_id: string | null
+          google_play_product_id_snapshot: string | null
           id: number
+          paid_at: string | null
           parent_id: number
+          price_krw_snapshot: number
+          refunded_at: string | null
+          status: Database["public"]["Enums"]["bank_purchase_status"]
         }
         Insert: {
-          amount: number
           bank_item_id: number
-          coins_granted?: number
+          cancelled_at?: string | null
+          cash_granted?: number
           created_at?: string | null
-          currency?: Database["public"]["Enums"]["currency_unit"] | null
+          currency?: Database["public"]["Enums"]["currency_unit"]
+          google_order_id?: string | null
+          google_play_product_id_snapshot?: string | null
           id?: number
+          paid_at?: string | null
           parent_id: number
+          price_krw_snapshot: number
+          refunded_at?: string | null
+          status?: Database["public"]["Enums"]["bank_purchase_status"]
         }
         Update: {
-          amount?: number
           bank_item_id?: number
-          coins_granted?: number
+          cancelled_at?: string | null
+          cash_granted?: number
           created_at?: string | null
-          currency?: Database["public"]["Enums"]["currency_unit"] | null
+          currency?: Database["public"]["Enums"]["currency_unit"]
+          google_order_id?: string | null
+          google_play_product_id_snapshot?: string | null
           id?: number
+          paid_at?: string | null
           parent_id?: number
+          price_krw_snapshot?: number
+          refunded_at?: string | null
+          status?: Database["public"]["Enums"]["bank_purchase_status"]
         }
         Relationships: [
           {
@@ -492,6 +522,34 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_google_play_purchase_pending: {
+        Args: {
+          p_google_play_product_id: string
+          p_parent_auth_user_id: string
+          p_purchase_token: string
+        }
+        Returns: {
+          bank_item_id: number
+          cancelled_at: string | null
+          cash_granted: number
+          created_at: string | null
+          currency: Database["public"]["Enums"]["currency_unit"]
+          google_order_id: string | null
+          google_play_product_id_snapshot: string | null
+          id: number
+          paid_at: string | null
+          parent_id: number
+          price_krw_snapshot: number
+          refunded_at: string | null
+          status: Database["public"]["Enums"]["bank_purchase_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bank_purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_quest_with_reward: {
         Args: {
           p_content?: string
@@ -595,6 +653,34 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "quests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      finalize_google_play_purchase: {
+        Args: {
+          p_google_order_id?: string
+          p_purchase_token: string
+          p_verified_google_play_product_id: string
+        }
+        Returns: {
+          bank_item_id: number
+          cancelled_at: string | null
+          cash_granted: number
+          created_at: string | null
+          currency: Database["public"]["Enums"]["currency_unit"]
+          google_order_id: string | null
+          google_play_product_id_snapshot: string | null
+          id: number
+          paid_at: string | null
+          parent_id: number
+          price_krw_snapshot: number
+          refunded_at: string | null
+          status: Database["public"]["Enums"]["bank_purchase_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bank_purchases"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -770,6 +856,7 @@ export type Database = {
     }
     Enums: {
       balance_type: "ATTENDANCE" | "CASH"
+      bank_purchase_status: "PENDING" | "PAID" | "CANCELLED" | "REFUNDED"
       currency_unit: "COIN" | "KRW"
       quest_status: "REGISTERED" | "REQUESTED" | "COMPLETED" | "REJECTED"
       reference_type: "QUEST" | "SHOP_PURCHASE" | "BANK_PURCHASE"
@@ -918,6 +1005,7 @@ export const Constants = {
   public: {
     Enums: {
       balance_type: ["ATTENDANCE", "CASH"],
+      bank_purchase_status: ["PENDING", "PAID", "CANCELLED", "REFUNDED"],
       currency_unit: ["COIN", "KRW"],
       quest_status: ["REGISTERED", "REQUESTED", "COMPLETED", "REJECTED"],
       reference_type: ["QUEST", "SHOP_PURCHASE", "BANK_PURCHASE"],
