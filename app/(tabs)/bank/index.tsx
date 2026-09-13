@@ -209,6 +209,11 @@ export default function BankScreen() {
                           {purchase.created_at ? new Date(purchase.created_at).toLocaleDateString('ko-KR') : '날짜 정보 없음'}
                         </Text>
                       </View>
+                      {purchase.provider === 'MOCK' ? (
+                        <View style={styles.historyProviderChip}>
+                          <Text style={styles.historyProviderText}>MOCK</Text>
+                        </View>
+                      ) : null}
                       <View style={[styles.statusChip, paid && styles.statusChipPaid]}>
                         <Text style={[styles.statusText, paid && styles.statusTextPaid]}>{label}</Text>
                       </View>
@@ -278,6 +283,8 @@ const styles = StyleSheet.create({
   historyCopy: { flex: 1 },
   historyTitle: { color: '#1E293B', fontSize: 14, fontWeight: '700' },
   historyDate: { color: '#94A3B8', fontSize: 11, marginTop: 4 },
+  historyProviderChip: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999, backgroundColor: '#FFEDD5' },
+  historyProviderText: { color: '#9A3412', fontSize: 9, fontWeight: '800' },
   statusChip: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999, backgroundColor: '#F1F5F9' },
   statusChipPaid: { backgroundColor: '#DCFCE7' },
   statusText: { color: '#64748B', fontSize: 10, fontWeight: '700' },

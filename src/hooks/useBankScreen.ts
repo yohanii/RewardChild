@@ -17,7 +17,7 @@ export type BankItem = Pick<
 
 export type BankPurchase = Pick<
   Tables<'bank_purchases'>,
-  'id' | 'cash_granted' | 'status' | 'created_at'
+  'id' | 'cash_granted' | 'status' | 'provider' | 'created_at'
 >
 
 type BankProfile = {
@@ -113,7 +113,7 @@ export function useBankScreen() {
         .order('sort_order', { ascending: true }),
       supabase
         .from('bank_purchases')
-        .select('id, cash_granted, status, created_at')
+        .select('id, cash_granted, status, provider, created_at')
         .order('created_at', { ascending: false })
         .limit(10),
     ])
