@@ -116,6 +116,11 @@ export type Database = {
           bank_item_id: number
           cancelled_at: string | null
           cash_granted: number
+          consume_attempt_count: number
+          consume_last_attempt_at: string | null
+          consume_last_error_code: string | null
+          consume_status: Database["public"]["Enums"]["google_play_consume_status"]
+          consumed_at: string | null
           created_at: string | null
           currency: Database["public"]["Enums"]["currency_unit"]
           google_order_id: string | null
@@ -131,6 +136,11 @@ export type Database = {
           bank_item_id: number
           cancelled_at?: string | null
           cash_granted?: number
+          consume_attempt_count?: number
+          consume_last_attempt_at?: string | null
+          consume_last_error_code?: string | null
+          consume_status?: Database["public"]["Enums"]["google_play_consume_status"]
+          consumed_at?: string | null
           created_at?: string | null
           currency?: Database["public"]["Enums"]["currency_unit"]
           google_order_id?: string | null
@@ -146,6 +156,11 @@ export type Database = {
           bank_item_id?: number
           cancelled_at?: string | null
           cash_granted?: number
+          consume_attempt_count?: number
+          consume_last_attempt_at?: string | null
+          consume_last_error_code?: string | null
+          consume_status?: Database["public"]["Enums"]["google_play_consume_status"]
+          consumed_at?: string | null
           created_at?: string | null
           currency?: Database["public"]["Enums"]["currency_unit"]
           google_order_id?: string | null
@@ -532,6 +547,11 @@ export type Database = {
           bank_item_id: number
           cancelled_at: string | null
           cash_granted: number
+          consume_attempt_count: number
+          consume_last_attempt_at: string | null
+          consume_last_error_code: string | null
+          consume_status: Database["public"]["Enums"]["google_play_consume_status"]
+          consumed_at: string | null
           created_at: string | null
           currency: Database["public"]["Enums"]["currency_unit"]
           google_order_id: string | null
@@ -667,6 +687,11 @@ export type Database = {
           bank_item_id: number
           cancelled_at: string | null
           cash_granted: number
+          consume_attempt_count: number
+          consume_last_attempt_at: string | null
+          consume_last_error_code: string | null
+          consume_status: Database["public"]["Enums"]["google_play_consume_status"]
+          consumed_at: string | null
           created_at: string | null
           currency: Database["public"]["Enums"]["currency_unit"]
           google_order_id: string | null
@@ -734,6 +759,39 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "shop_purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_google_play_consume_result: {
+        Args: {
+          p_error_code?: string
+          p_purchase_token: string
+          p_succeeded: boolean
+        }
+        Returns: {
+          bank_item_id: number
+          cancelled_at: string | null
+          cash_granted: number
+          consume_attempt_count: number
+          consume_last_attempt_at: string | null
+          consume_last_error_code: string | null
+          consume_status: Database["public"]["Enums"]["google_play_consume_status"]
+          consumed_at: string | null
+          created_at: string | null
+          currency: Database["public"]["Enums"]["currency_unit"]
+          google_order_id: string | null
+          google_play_product_id_snapshot: string | null
+          id: number
+          paid_at: string | null
+          parent_id: number
+          price_krw_snapshot: number
+          refunded_at: string | null
+          status: Database["public"]["Enums"]["bank_purchase_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bank_purchases"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -858,6 +916,11 @@ export type Database = {
       balance_type: "ATTENDANCE" | "CASH"
       bank_purchase_status: "PENDING" | "PAID" | "CANCELLED" | "REFUNDED"
       currency_unit: "COIN" | "KRW"
+      google_play_consume_status:
+        | "NOT_STARTED"
+        | "PENDING"
+        | "FAILED"
+        | "CONSUMED"
       quest_status: "REGISTERED" | "REQUESTED" | "COMPLETED" | "REJECTED"
       reference_type: "QUEST" | "SHOP_PURCHASE" | "BANK_PURCHASE"
       relation_status: "PENDING" | "ACTIVE" | "BLOCKED"
@@ -1007,6 +1070,12 @@ export const Constants = {
       balance_type: ["ATTENDANCE", "CASH"],
       bank_purchase_status: ["PENDING", "PAID", "CANCELLED", "REFUNDED"],
       currency_unit: ["COIN", "KRW"],
+      google_play_consume_status: [
+        "NOT_STARTED",
+        "PENDING",
+        "FAILED",
+        "CONSUMED",
+      ],
       quest_status: ["REGISTERED", "REQUESTED", "COMPLETED", "REJECTED"],
       reference_type: ["QUEST", "SHOP_PURCHASE", "BANK_PURCHASE"],
       relation_status: ["PENDING", "ACTIVE", "BLOCKED"],
