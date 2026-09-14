@@ -122,7 +122,10 @@ function getVerifiedLineItem(purchase: GoogleProductPurchaseV2, requestedProduct
   return lineItems[0]
 }
 
-function isConsumed(purchase: GoogleProductPurchaseV2, requestedProductId: string) {
+export function isGooglePurchaseConsumed(
+  purchase: GoogleProductPurchaseV2,
+  requestedProductId: string,
+) {
   return getVerifiedLineItem(purchase, requestedProductId)
     ?.productOfferDetails?.consumptionState === 'CONSUMPTION_STATE_CONSUMED'
 }
@@ -236,7 +239,7 @@ export async function handlePurchaseRequest(
     return jsonResponse(500, { code: 'BANK_FINALIZE_FAILED', retryable: true })
   }
 
-  if (isConsumed(googlePurchase, input.productId)) {
+  if (isGooglePurchaseConsumed(googlePurchase, input.productId)) {
     try {
       const consumed = await dependencies.recordConsumeResult(input.purchaseToken, true)
       return jsonResponse(200, purchaseResponse(consumed, 'CONSUMED'))
@@ -256,7 +259,7 @@ export async function handlePurchaseRequest(
   } catch (consumeError) {
     try {
       const refreshed = await dependencies.verifyGooglePurchase(input.purchaseToken)
-      if (isConsumed(refreshed, input.productId)) {
+      if (isGooglePurchaseConsumed(refreshed, input.productId)) {
         const consumed = await dependencies.recordConsumeResult(input.purchaseToken, true)
         return jsonResponse(200, purchaseResponse(consumed, 'CONSUMED'))
       }

@@ -119,6 +119,9 @@ export type Database = {
           consume_attempt_count: number
           consume_last_attempt_at: string | null
           consume_last_error_code: string | null
+          consume_lease_expires_at: string | null
+          consume_lease_id: string | null
+          consume_retry_exhausted_at: string | null
           consume_status: Database["public"]["Enums"]["google_play_consume_status"]
           consumed_at: string | null
           created_at: string | null
@@ -140,6 +143,9 @@ export type Database = {
           consume_attempt_count?: number
           consume_last_attempt_at?: string | null
           consume_last_error_code?: string | null
+          consume_lease_expires_at?: string | null
+          consume_lease_id?: string | null
+          consume_retry_exhausted_at?: string | null
           consume_status?: Database["public"]["Enums"]["google_play_consume_status"]
           consumed_at?: string | null
           created_at?: string | null
@@ -161,6 +167,9 @@ export type Database = {
           consume_attempt_count?: number
           consume_last_attempt_at?: string | null
           consume_last_error_code?: string | null
+          consume_lease_expires_at?: string | null
+          consume_lease_id?: string | null
+          consume_retry_exhausted_at?: string | null
           consume_status?: Database["public"]["Enums"]["google_play_consume_status"]
           consumed_at?: string | null
           created_at?: string | null
@@ -540,6 +549,54 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      claim_google_play_consume_retries: {
+        Args: { p_limit?: number; p_now?: string }
+        Returns: {
+          attempt_count: number
+          lease_id: string
+          product_id: string
+          purchase_id: number
+          purchase_token: string
+        }[]
+      }
+      complete_google_play_consume_retry: {
+        Args: {
+          p_error_code?: string
+          p_lease_id: string
+          p_purchase_token: string
+          p_succeeded: boolean
+        }
+        Returns: {
+          bank_item_id: number
+          cancelled_at: string | null
+          cash_granted: number
+          consume_attempt_count: number
+          consume_last_attempt_at: string | null
+          consume_last_error_code: string | null
+          consume_lease_expires_at: string | null
+          consume_lease_id: string | null
+          consume_retry_exhausted_at: string | null
+          consume_status: Database["public"]["Enums"]["google_play_consume_status"]
+          consumed_at: string | null
+          created_at: string | null
+          currency: Database["public"]["Enums"]["currency_unit"]
+          google_order_id: string | null
+          google_play_product_id_snapshot: string | null
+          id: number
+          paid_at: string | null
+          parent_id: number
+          price_krw_snapshot: number
+          provider: Database["public"]["Enums"]["bank_purchase_provider"]
+          refunded_at: string | null
+          status: Database["public"]["Enums"]["bank_purchase_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bank_purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_google_play_purchase_pending: {
         Args: {
           p_google_play_product_id: string
@@ -553,6 +610,9 @@ export type Database = {
           consume_attempt_count: number
           consume_last_attempt_at: string | null
           consume_last_error_code: string | null
+          consume_lease_expires_at: string | null
+          consume_lease_id: string | null
+          consume_retry_exhausted_at: string | null
           consume_status: Database["public"]["Enums"]["google_play_consume_status"]
           consumed_at: string | null
           created_at: string | null
@@ -587,6 +647,9 @@ export type Database = {
           consume_attempt_count: number
           consume_last_attempt_at: string | null
           consume_last_error_code: string | null
+          consume_lease_expires_at: string | null
+          consume_lease_id: string | null
+          consume_retry_exhausted_at: string | null
           consume_status: Database["public"]["Enums"]["google_play_consume_status"]
           consumed_at: string | null
           created_at: string | null
@@ -728,6 +791,9 @@ export type Database = {
           consume_attempt_count: number
           consume_last_attempt_at: string | null
           consume_last_error_code: string | null
+          consume_lease_expires_at: string | null
+          consume_lease_id: string | null
+          consume_retry_exhausted_at: string | null
           consume_status: Database["public"]["Enums"]["google_play_consume_status"]
           consumed_at: string | null
           created_at: string | null
@@ -815,6 +881,9 @@ export type Database = {
           consume_attempt_count: number
           consume_last_attempt_at: string | null
           consume_last_error_code: string | null
+          consume_lease_expires_at: string | null
+          consume_lease_id: string | null
+          consume_retry_exhausted_at: string | null
           consume_status: Database["public"]["Enums"]["google_play_consume_status"]
           consumed_at: string | null
           created_at: string | null
