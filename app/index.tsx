@@ -10,7 +10,6 @@ export default function Index() {
 
       if (!session) {
         // 로그인 안 됨 → 로그인 화면으로
-        console.log('로그인 안 됨 → 로그인 화면으로 session = ', session)
         router.replace('/login')
         return
       }

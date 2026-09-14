@@ -1,5 +1,6 @@
 import { User } from '@supabase/supabase-js'
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react'
+import { AppState, Platform } from 'react-native'
 import { supabase } from '../services/supabaseClient'
 
 // Context 타입 정의
@@ -29,8 +30,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(session?.user ?? null)
     })
 
+    const appStateSubscription = Platform.OS === 'web'
+      ? null
+      : AppState.addEventListener('change', (state) => {
+        if (state === 'active') supabase.auth.startAutoRefresh()
+        else supabase.auth.stopAutoRefresh()
+      })
+
+    if (Platform.OS !== 'web' && AppState.currentState === 'active') {
+      supabase.auth.startAutoRefresh()
+    }
+
     // 3. 언마운트 시 리스너 해제
-    return () => listener.subscription.unsubscribe()
+    return () => {
+      listener.subscription.unsubscribe()
+      appStateSubscription?.remove()
+      if (Platform.OS !== 'web') supabase.auth.stopAutoRefresh()
+    }
   }, [])
 
   // 4. 전역 상태 제공

@@ -7,10 +7,8 @@ import { supabase } from '../src/services/supabaseClient'
 export default function Login() {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Login :: 로그인 시도 session = ', session)
+      (_event, session) => {
         if (session) {
-          console.log('Login :: 로그인 성공:', session.user)
           // 로그인 성공 → index(세션체크)로 리다이렉트
           router.replace('/')
         }
