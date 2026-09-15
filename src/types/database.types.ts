@@ -34,6 +34,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance_claims: {
+        Row: {
+          amount_granted: number
+          claimed_at: string
+          claimed_on: string
+          user_id: number
+        }
+        Insert: {
+          amount_granted?: number
+          claimed_at?: string
+          claimed_on: string
+          user_id: number
+        }
+        Update: {
+          amount_granted?: number
+          claimed_at?: string
+          claimed_on?: string
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_claims_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       balances: {
         Row: {
           amount: number
@@ -479,6 +508,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_daily_attendance: { Args: never; Returns: number }
       approve_quest_with_reward: {
         Args: { p_quest_id: number }
         Returns: {
@@ -1207,4 +1237,3 @@ export const Constants = {
     },
   },
 } as const
-

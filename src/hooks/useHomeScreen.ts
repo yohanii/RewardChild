@@ -1,5 +1,7 @@
 import { supabase } from '@/src/services/supabaseClient'
+import { claimDailyAttendance } from '@/src/services/attendanceService'
 import type { Enums } from '@/src/types/database.types'
+import { showAlert } from '@/src/utils/alert'
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
 
@@ -81,6 +83,15 @@ export function useHomeScreen() {
         const actionableStatuses =
           nextProfile.role === 'PARENT' ? ['REQUESTED' as const] : ['REGISTERED' as const, 'REJECTED' as const]
 
+        let attendanceGranted = 0
+        if (nextProfile.role === 'PARENT') {
+          try {
+            attendanceGranted = await claimDailyAttendance()
+          } catch (error) {
+            console.warn('daily attendance claim error', error)
+          }
+        }
+
         const [balanceResult, relationResult, questResult] = await Promise.all([
           supabase
             .from('balances')
@@ -141,6 +152,10 @@ export function useHomeScreen() {
         setConnection(nextConnection)
         setActionableQuestCount(questResult.count ?? 0)
         setLoading(false)
+
+        if (attendanceGranted > 0) {
+          showAlert('출석 완료', `ATTENDANCE ${attendanceGranted}개를 충전했어요.`)
+        }
       }
 
       load().catch((error) => {

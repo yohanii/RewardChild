@@ -36,6 +36,15 @@ export default function KakaoLoginButton() {
 
       if (error || !data.url) throw error ?? new Error('OAUTH_URL_NOT_FOUND')
 
+      if (__DEV__) {
+        const authorizeUrl = new URL(data.url)
+        console.info('[Kakao OAuth authorize URL]', {
+          host: authorizeUrl.host,
+          pathname: authorizeUrl.pathname,
+          redirectTo: authorizeUrl.searchParams.get('redirect_to'),
+        })
+      }
+
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
       if (result.type === 'cancel' || result.type === 'dismiss') {
         showAlert('로그인 취소', '카카오 로그인이 취소되었어요.')
