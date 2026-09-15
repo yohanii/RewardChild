@@ -847,11 +847,7 @@ export type Database = {
       }
       find_child_by_tag: {
         Args: { _nickname: string; _tag: string }
-        Returns: {
-          id: number
-          nickname: string
-          tag: string
-        }[]
+        Returns: { id: number }[]
       }
       fulfill_shop_purchase: {
         Args: { p_shop_purchase_id: number }

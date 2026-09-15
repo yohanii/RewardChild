@@ -92,6 +92,11 @@ export default function RelationConnectScreen() {
       .rpc('find_child_by_tag', { _nickname: nickname.trim(), _tag: tag.trim() })
       .maybeSingle()
 
+    if (childErr?.message === 'CHILD_SEARCH_RATE_LIMITED') {
+      setLoading(false)
+      return showAlert('검색 요청이 너무 많습니다.', '10분 후 다시 시도해주세요.')
+    }
+
     if (childErr || !child) {
       setLoading(false)
       return showAlert('존재하지 않는 자녀입니다.')
