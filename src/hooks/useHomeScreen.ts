@@ -2,6 +2,7 @@ import { supabase } from '@/src/services/supabaseClient'
 import { claimDailyAttendance } from '@/src/services/attendanceService'
 import type { Enums } from '@/src/types/database.types'
 import { showAlert } from '@/src/utils/alert'
+import { classifyRelations } from '@/src/utils/relationState'
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
 
@@ -103,9 +104,7 @@ export function useHomeScreen() {
             .select('id, parent_id, child_id')
             .eq(relationColumn, nextProfile.id)
             .eq('status', 'ACTIVE')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
+            .limit(2),
           supabase
             .from('quests')
             .select('id', { count: 'exact', head: true })
@@ -129,8 +128,9 @@ export function useHomeScreen() {
         const cash = balanceRows.find((row) => row.type === 'CASH')?.amount ?? 0
 
         let nextConnection: HomeConnection | null = null
-        const relation = relationResult.data
-        if (relation) {
+        const relationState = classifyRelations(relationResult.data)
+        if (relationState.kind === 'SINGLE') {
+          const relation = relationState.relation
           const isParent = nextProfile.role === 'PARENT'
           const relatedUserId = isParent ? relation.child_id : relation.parent_id
           const { data: relatedUser } = await supabase
@@ -142,6 +142,11 @@ export function useHomeScreen() {
           nextConnection = {
             label: isParent ? '연결된 자녀' : '연결된 부모',
             name: relatedUser?.nickname ?? (isParent ? '우리 아이' : '우리 부모님'),
+          }
+        } else if (relationState.kind === 'MULTIPLE') {
+          nextConnection = {
+            label: '가족 관계',
+            name: '여러 가족이 연결되어 있어요',
           }
         }
 

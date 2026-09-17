@@ -1,6 +1,7 @@
 // src/hooks/useShopScreen.ts
 import { supabase } from '@/src/services/supabaseClient'
 import type { Enums, Tables } from '@/src/types/database.types'
+import { classifyRelations } from '@/src/utils/relationState'
 import { router } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -59,6 +60,7 @@ export function useShopScreen() {
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [targetChildId, setTargetChildId] = useState<number | null>(null)
+  const [targetRelationState, setTargetRelationState] = useState<'READY' | 'NONE' | 'MULTIPLE'>('NONE')
 
   const [balance, setBalance] = useState(0)
   const [items, setItems] = useState<ShopItem[]>([])
@@ -94,10 +96,17 @@ export function useShopScreen() {
       const p = await loadProfile()
       setProfile(p)
 
-      const childId = await resolveTargetChildId(p)
+      const target = await resolveTargetChild(p)
+      const childId = target.kind === 'READY' ? target.childId : null
       setTargetChildId(childId)
+      setTargetRelationState(target.kind)
 
-      await Promise.all([loadBalance(childId), loadShopItems(p), loadPurchases(p)])
+      if (childId === null) setBalance(0)
+      await Promise.all([
+        childId === null ? Promise.resolve() : loadBalance(childId),
+        loadShopItems(p),
+        loadPurchases(p),
+      ])
     } catch (e) {
       console.warn('useShopScreen.reload error', e)
     } finally {
@@ -130,25 +139,28 @@ export function useShopScreen() {
     return { id: data.id, role: data.role, nickname: data.nickname }
   }
 
-  const resolveTargetChildId = async (p: Profile): Promise<number> => {
-    if (p.role === 'CHILD') return p.id
-
-    // ⚠️ 여기만 프로젝트 스키마에 맞게 바꾸면 됨.
-    // (예: relations 테이블명/컬럼명이 다르면 수정)
+  const resolveTargetChild = async (
+    p: Profile,
+  ): Promise<{ kind: 'READY'; childId: number } | { kind: 'NONE' | 'MULTIPLE' }> => {
+    const relationColumn = p.role === 'PARENT' ? 'parent_id' : 'child_id'
     const { data, error } = await supabase
       .from('relations')
-      .select('child_id')
-      .eq('parent_id', p.id)
+      .select('parent_id, child_id')
+      .eq(relationColumn, p.id)
       .eq('status', 'ACTIVE')
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .limit(2)
 
     if (error) {
-      console.warn('resolveTargetChildId failed, fallback to parent id', error.message)
-      return p.id
+      throw error
     }
 
-    return data?.[0]?.child_id ?? p.id
+    const relationState = classifyRelations(data)
+    if (relationState.kind === 'NONE') return { kind: 'NONE' }
+    if (relationState.kind === 'MULTIPLE') return { kind: 'MULTIPLE' }
+    return {
+      kind: 'READY',
+      childId: p.role === 'PARENT' ? relationState.relation.child_id : p.id,
+    }
   }
 
   const loadBalance = async (userId: number) => {
@@ -297,6 +309,7 @@ export function useShopScreen() {
   return {
     profile,
     targetChildId,
+    targetRelationState,
     balance,
     loading,
     mutating,

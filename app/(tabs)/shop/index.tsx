@@ -13,7 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 export default function ShopScreen() {
   const {
     profile, balance, loading, mutating, orderedItems, purchases, purchasedSet,
-    createItem, updateItem, deactivateItem, purchaseItem, fulfillPurchase, reload,
+    targetRelationState, createItem, updateItem, deactivateItem, purchaseItem,
+    fulfillPurchase, reload,
   } = useShopScreen()
   const [createVisible, setCreateVisible] = useState(false)
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null)
@@ -31,95 +32,112 @@ export default function ShopScreen() {
         <ScreenHeader
           title="상점"
           subtitle={isParent ? '아이에게 보여줄 보상을 관리해요.' : '모은 코인으로 받을 보상을 골라 보세요.'}
-          actionLabel={isParent ? '아이템 등록' : undefined}
-          onAction={isParent ? () => setCreateVisible(true) : undefined}
+          actionLabel={isParent && targetRelationState !== 'MULTIPLE' ? '아이템 등록' : undefined}
+          onAction={isParent && targetRelationState !== 'MULTIPLE' ? () => setCreateVisible(true) : undefined}
         />
         <ScrollView style={styles.list} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <BalanceCard
-            label={isParent ? '자녀의 보유 코인' : '사용 가능한 코인'}
-            amount={balance}
-            caption={isParent ? '연결된 자녀의 현재 재화를 표시하고 있어요.' : undefined}
-            compact
-          />
-          <Text style={styles.sectionTitle}>보상 아이템</Text>
-
-          {loading ? (
-            <View style={styles.loadingInline}><ActivityIndicator color="#2563EB" /></View>
-          ) : orderedItems.length === 0 ? (
+          {targetRelationState !== 'READY' ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>아직 등록된 아이템이 없어요.</Text>
+              <Text style={styles.emptyTitle}>
+                {targetRelationState === 'MULTIPLE' ? '가족 선택 기능을 준비 중이에요.' : '활성 가족 관계가 없어요.'}
+              </Text>
               <Text style={styles.emptySubtitle}>
-                {isParent ? '첫 번째 보상을 만들어 보세요.' : '부모님이 보상을 등록하면 이곳에 표시돼요.'}
+                {targetRelationState === 'MULTIPLE'
+                  ? '여러 가족 중 한 명을 임의로 선택하지 않아 관계별 정보를 표시하지 않습니다.'
+                  : '가족과 연결되면 이곳에서 관계별 정보를 확인할 수 있어요.'}
               </Text>
             </View>
           ) : (
-            orderedItems.map((item) => (
-              <ShopItemCard
-                key={item.id}
-                item={item}
-                purchased={purchasedSet.has(item.id)}
-                isParent={isParent}
-                mutating={mutating}
-                onEdit={() => setEditingItem(item)}
-                onDeactivate={async () => {
-                  const confirmed = await confirmAsync(
-                    '상품 비활성화',
-                    '자녀의 상점에서 이 상품을 숨길까요?',
-                  )
-                  if (!confirmed) return
-                  try {
-                    await deactivateItem(item.id)
-                  } catch (error) {
-                    showAlert('비활성화 실패', error instanceof Error ? error.message : '다시 시도해주세요.')
-                  }
-                }}
-                onPurchase={async () => {
-                  const confirmed = await confirmAsync(
-                    '상품 구매',
-                    `${item.price.toLocaleString()} COIN으로 구매할까요?`,
-                  )
-                  if (!confirmed) return
-                  try {
-                    const purchased = await purchaseItem(item.id)
-                    if (purchased) showAlert('구매 완료', '구매 내역과 잔액이 반영됐어요.')
-                  } catch (error) {
-                    showAlert('구매 실패', error instanceof Error ? error.message : '잔액과 상품 상태를 확인해주세요.')
-                  }
-                }}
-              />
-            ))
+            <BalanceCard
+              label={isParent ? '자녀의 보유 코인' : '사용 가능한 코인'}
+              amount={balance}
+              caption={isParent ? '연결된 자녀의 현재 재화를 표시하고 있어요.' : undefined}
+              compact
+            />
           )}
+          {targetRelationState === 'MULTIPLE' ? null : (
+            <>
+              <Text style={styles.sectionTitle}>보상 아이템</Text>
 
-          <Text style={[styles.sectionTitle, styles.purchaseSectionTitle]}>구매 이력</Text>
-          {purchases.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>아직 구매 이력이 없어요.</Text>
-              <Text style={styles.emptySubtitle}>
-                {isParent ? '자녀가 상품을 구매하면 이곳에서 이행 상태를 관리할 수 있어요.' : '상품을 구매하면 이곳에서 제공 상태를 확인할 수 있어요.'}
-              </Text>
-            </View>
-          ) : (
-            purchases.map((purchase) => (
-              <ShopPurchaseCard
-                key={purchase.id}
-                purchase={purchase}
-                itemTitle={itemTitles.get(purchase.shop_item_id)}
-                isParent={isParent}
-                mutating={mutating}
-                onFulfill={async () => {
-                  const confirmed = await confirmAsync(
-                    '보상 제공 완료',
-                    '자녀에게 실제 보상을 제공했나요? 완료 후에는 되돌릴 수 없어요.',
-                  )
-                  if (!confirmed) return
-                  try {
-                    await fulfillPurchase(purchase.id)
-                  } catch (error) {
-                    showAlert('이행 처리 실패', error instanceof Error ? error.message : '다시 시도해주세요.')
-                  }
-                }}
-              />
-            ))
+              {loading ? (
+                <View style={styles.loadingInline}><ActivityIndicator color="#2563EB" /></View>
+              ) : orderedItems.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyTitle}>아직 등록된 아이템이 없어요.</Text>
+                  <Text style={styles.emptySubtitle}>
+                    {isParent ? '첫 번째 보상을 만들어 보세요.' : '부모님이 보상을 등록하면 이곳에 표시돼요.'}
+                  </Text>
+                </View>
+              ) : (
+                orderedItems.map((item) => (
+                  <ShopItemCard
+                    key={item.id}
+                    item={item}
+                    purchased={purchasedSet.has(item.id)}
+                    isParent={isParent}
+                    mutating={mutating}
+                    onEdit={() => setEditingItem(item)}
+                    onDeactivate={async () => {
+                      const confirmed = await confirmAsync(
+                        '상품 비활성화',
+                        '자녀의 상점에서 이 상품을 숨길까요?',
+                      )
+                      if (!confirmed) return
+                      try {
+                        await deactivateItem(item.id)
+                      } catch (error) {
+                        showAlert('비활성화 실패', error instanceof Error ? error.message : '다시 시도해주세요.')
+                      }
+                    }}
+                    onPurchase={async () => {
+                      const confirmed = await confirmAsync(
+                        '상품 구매',
+                        `${item.price.toLocaleString()} COIN으로 구매할까요?`,
+                      )
+                      if (!confirmed) return
+                      try {
+                        const purchased = await purchaseItem(item.id)
+                        if (purchased) showAlert('구매 완료', '구매 내역과 잔액이 반영됐어요.')
+                      } catch (error) {
+                        showAlert('구매 실패', error instanceof Error ? error.message : '잔액과 상품 상태를 확인해주세요.')
+                      }
+                    }}
+                  />
+                ))
+              )}
+
+              <Text style={[styles.sectionTitle, styles.purchaseSectionTitle]}>구매 이력</Text>
+              {purchases.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyTitle}>아직 구매 이력이 없어요.</Text>
+                  <Text style={styles.emptySubtitle}>
+                    {isParent ? '자녀가 상품을 구매하면 이곳에서 이행 상태를 관리할 수 있어요.' : '상품을 구매하면 이곳에서 제공 상태를 확인할 수 있어요.'}
+                  </Text>
+                </View>
+              ) : (
+                purchases.map((purchase) => (
+                  <ShopPurchaseCard
+                    key={purchase.id}
+                    purchase={purchase}
+                    itemTitle={itemTitles.get(purchase.shop_item_id)}
+                    isParent={isParent}
+                    mutating={mutating}
+                    onFulfill={async () => {
+                      const confirmed = await confirmAsync(
+                        '보상 제공 완료',
+                        '자녀에게 실제 보상을 제공했나요? 완료 후에는 되돌릴 수 없어요.',
+                      )
+                      if (!confirmed) return
+                      try {
+                        await fulfillPurchase(purchase.id)
+                      } catch (error) {
+                        showAlert('이행 처리 실패', error instanceof Error ? error.message : '다시 시도해주세요.')
+                      }
+                    }}
+                  />
+                ))
+              )}
+            </>
           )}
         </ScrollView>
       </View>

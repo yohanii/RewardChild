@@ -12,7 +12,7 @@ export default function QuestsScreen() {
   const {
     profile, balance, quests, loading, mutating, selectedQuest, modalVisible,
     openQuest, closeQuest, deleteQuest, childRequestQuest, parentApproveQuest,
-    parentRejectQuest, getDDayLabel, createQuest,
+    parentRejectQuest, getDDayLabel, createQuest, hasMultipleActiveRelations,
   } = useQuestsScreen()
   const [createVisible, setCreateVisible] = useState(false)
 
@@ -28,13 +28,20 @@ export default function QuestsScreen() {
         <ScreenHeader
           title="퀘스트"
           subtitle={isParent ? '아이의 할 일과 완료 요청을 관리해요.' : '오늘 할 일을 확인하고 완료를 요청해요.'}
-          actionLabel={isParent ? '퀘스트 등록' : undefined}
-          onAction={isParent ? () => setCreateVisible(true) : undefined}
+          actionLabel={isParent && !hasMultipleActiveRelations ? '퀘스트 등록' : undefined}
+          onAction={isParent && !hasMultipleActiveRelations ? () => setCreateVisible(true) : undefined}
         />
         <BalanceCard label="사용 가능한 코인" amount={balance} compact />
         <Text style={styles.sectionTitle}>오늘의 퀘스트</Text>
 
-        {loading ? (
+        {hasMultipleActiveRelations ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>가족 선택 기능을 준비 중이에요.</Text>
+            <Text style={styles.emptySubtitle}>
+              여러 관계의 퀘스트를 섞어 표시하지 않습니다.
+            </Text>
+          </View>
+        ) : loading ? (
           <View style={styles.loadingInline}><ActivityIndicator color="#2563EB" /></View>
         ) : quests.length === 0 ? (
           <View style={styles.emptyContainer}>

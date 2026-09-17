@@ -1,5 +1,6 @@
 import { useOnRelationActivated } from '@/src/hooks/useOnRelationActivated'
 import { showAlert } from '@/src/utils/alert'
+import { classifyRelations } from '@/src/utils/relationState'
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native'
@@ -17,10 +18,11 @@ export default function RelationConnectScreen() {
   const [profile, setProfile] = useState<OnboardedProfile | null>(null)
   const [childTag, setChildTag] = useState('')
   const [waitingRelationId, setWaitingRelationId] = useState<number | null>(null)
+  const [hasMultiplePendingRelations, setHasMultiplePendingRelations] = useState(false)
   const [loading, setLoading] = useState(false)
 
   // ✅ 1. relation이 ACTIVE 되면 자동 이동
-  useOnRelationActivated(profile?.id ?? 0, 'PARENT', () => {
+  useOnRelationActivated(profile?.id ?? 0, profile?.role ?? 'PARENT', () => {
     router.replace('/home')
   }, { relationId: waitingRelationId ?? undefined })
 
@@ -65,18 +67,21 @@ export default function RelationConnectScreen() {
         .select('id,status')
         .eq('parent_id', profile.id)
         .in('status', ['PENDING', 'ACTIVE'])
-        .order('id', { ascending: false })
-        .limit(1)
 
       if (error) {
         console.error(error)
         return
       }
 
-      const relation = data?.[0]
-      if (!relation) return
-      if (relation.status === 'ACTIVE') router.replace('/home')
-      else setWaitingRelationId(relation.id)
+      const activeState = classifyRelations(data?.filter((relation) => relation.status === 'ACTIVE'))
+      if (activeState.kind !== 'NONE') {
+        router.replace('/home')
+        return
+      }
+
+      const pendingState = classifyRelations(data?.filter((relation) => relation.status === 'PENDING'))
+      setWaitingRelationId(pendingState.kind === 'SINGLE' ? pendingState.relation.id : null)
+      setHasMultiplePendingRelations(pendingState.kind === 'MULTIPLE')
     })()
   }, [profile])
 
@@ -147,6 +152,7 @@ export default function RelationConnectScreen() {
 
     if (error) return showAlert('요청 취소 실패', error.message)
     setWaitingRelationId(null)
+    setHasMultiplePendingRelations(false)
     showAlert('연결 요청을 취소했습니다.')
   }
 
@@ -178,6 +184,13 @@ export default function RelationConnectScreen() {
                 요청이 전송되었습니다. 자녀가 수락하면 자동으로 이동합니다.
               </Text>
               <Button title="요청 취소" onPress={handleCancel} color="#DC2626" />
+            </View>
+          )}
+          {hasMultiplePendingRelations && !loading && (
+            <View style={styles.waitingArea}>
+              <Text style={styles.waitingText}>
+                여러 연결 요청이 대기 중입니다. 개별 요청 관리 기능을 준비 중이에요.
+              </Text>
             </View>
           )}
         </>

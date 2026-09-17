@@ -3,6 +3,7 @@ import { supabase } from '@/src/services/supabaseClient'
 import type { Profile, Quest } from '@/src/types/quest'
 import { showAlert } from '@/src/utils/alert'
 import { confirmAsync } from '@/src/utils/confirmAsync'
+import { classifyRelations } from '@/src/utils/relationState'
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -23,6 +24,7 @@ export const useQuestsScreen = () => {
   const [quests, setQuests] = useState<Quest[]>([])
   const [loading, setLoading] = useState(true)
   const [mutating, setMutating] = useState(false)
+  const [hasMultipleActiveRelations, setHasMultipleActiveRelations] = useState(false)
 
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null)
   const [modalVisible, setModalVisible] = useState(false)
@@ -70,6 +72,21 @@ export const useQuestsScreen = () => {
         nickname: profileRow.nickname,
       }
       setProfile(onboardedProfile)
+
+      const relationColumn = onboardedProfile.role === 'PARENT' ? 'parent_id' : 'child_id'
+      const { data: activeRelations, error: relationError } = await supabase
+        .from('relations')
+        .select('id')
+        .eq(relationColumn, onboardedProfile.id)
+        .eq('status', 'ACTIVE')
+        .limit(2)
+
+      if (relationError) {
+        console.warn(relationError)
+      }
+      setHasMultipleActiveRelations(
+        !relationError && classifyRelations(activeRelations).kind === 'MULTIPLE',
+      )
 
       const { data: balanceRows, error: balanceError } = await supabase
         .from('balances')
@@ -262,13 +279,12 @@ export const useQuestsScreen = () => {
     try {
       setMutating(true)
 
-      // 1) 활성 관계 찾기 (MVP: 1:1 관계 기준)
-      const { data: relation, error: relationError } = await supabase
+      const { data: activeRelations, error: relationError } = await supabase
         .from('relations')
         .select('id, parent_id, child_id, status')
         .eq('parent_id', profile.id)
         .eq('status', 'ACTIVE')
-        .maybeSingle()
+        .limit(2)
 
       if (relationError) {
         console.warn(relationError)
@@ -276,10 +292,17 @@ export const useQuestsScreen = () => {
         return false
       }
 
-      if (!relation) {
+      const relationState = classifyRelations(activeRelations)
+      if (relationState.kind === 'NONE') {
         showAlert('관계 없음', '활성화된 부모-자녀 관계가 없어요.')
         return false
       }
+      if (relationState.kind === 'MULTIPLE') {
+        showAlert('가족 선택 필요', '여러 자녀 중 퀘스트를 보낼 대상을 선택하는 기능을 준비 중이에요.')
+        return false
+      }
+
+      const relation = relationState.relation
 
       // 보상 금액 기본 검증
       if (!payload.reward || payload.reward <= 0) {
@@ -332,6 +355,7 @@ export const useQuestsScreen = () => {
     quests,
     loading,
     mutating,
+    hasMultipleActiveRelations,
     selectedQuest,
     modalVisible,
     openQuest,

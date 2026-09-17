@@ -2,6 +2,7 @@ import { router } from 'expo-router'
 import { useEffect } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import { supabase } from '../src/services/supabaseClient'
+import { classifyRelations } from '../src/utils/relationState'
 
 export default function Index() {
   useEffect(() => {
@@ -40,17 +41,21 @@ export default function Index() {
       }
 
       // 관계 여부 확인
-      const { data: relation } = await supabase
+      const { data: activeRelations, error: relationError } = await supabase
         .from('relations')
-        .select('*')
+        .select('id')
         .or(`parent_id.eq.${profile.id},child_id.eq.${profile.id}`)
-        .maybeSingle()
+        .eq('status', 'ACTIVE')
+        .limit(2)
 
-      if (relation && relation.status === 'ACTIVE') {
-        // 관계 있으면 홈으로
+      if (relationError) {
+        console.warn('initial relation load error', relationError.message)
+      }
+
+      const relationState = classifyRelations(activeRelations)
+      if (relationState.kind !== 'NONE') {
         router.replace('/home')
       } else {
-        // 관계 없거나, 연결 중이면 가족 연결 페이지
         router.replace('/relation/connect')
       }
     }
