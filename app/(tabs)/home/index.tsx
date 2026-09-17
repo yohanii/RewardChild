@@ -1,7 +1,7 @@
 import { BalanceCard } from '@/src/components/common/BalanceCard'
 import { useHomeScreen } from '@/src/hooks/useHomeScreen'
 import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
+import { router, type Href } from 'expo-router'
 import React from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -32,7 +32,17 @@ export default function HomeScreen() {
               <Text style={styles.eyebrow}>오늘도 반가워요</Text>
               <Text style={styles.title}>{profile.nickname}님</Text>
             </View>
-            <View style={styles.roleBadge}><Text style={styles.roleText}>{isParent ? '부모' : '자녀'}</Text></View>
+            <View style={styles.headerActions}>
+              <View style={styles.roleBadge}><Text style={styles.roleText}>{isParent ? '부모' : '자녀'}</Text></View>
+              <Pressable
+                style={styles.settingsButton}
+                onPress={() => router.push('/settings' as Href)}
+                accessibilityRole="button"
+                accessibilityLabel="설정 열기"
+              >
+                <Ionicons name="settings-outline" size={21} color="#475569" />
+              </Pressable>
+            </View>
           </View>
 
           <BalanceCard
@@ -94,8 +104,10 @@ const styles = StyleSheet.create({
   greetingCopy: { flex: 1 },
   eyebrow: { color: '#64748B', fontSize: 13, fontWeight: '600', marginBottom: 4 },
   title: { color: '#0F172A', fontSize: 29, fontWeight: '800', letterSpacing: -0.7 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   roleBadge: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: '#E0EAFF' },
   roleText: { color: '#1D4ED8', fontSize: 12, fontWeight: '700' },
+  settingsButton: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
   section: { gap: 10 },
   sectionTitle: { color: '#334155', fontSize: 16, fontWeight: '800' },
   primaryCard: { minHeight: 112, padding: 18, borderRadius: 22, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#2563EB' },
