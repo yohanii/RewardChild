@@ -73,7 +73,7 @@ export function useSettingsScreen() {
       nextProfile.role === 'PARENT' ? relation.child_id : relation.parent_id,
     )
     const relatedUsers = relatedUserIds.length > 0
-      ? await supabase.from('users').select('id, nickname, tag').in('id', relatedUserIds)
+      ? await supabase.rpc('get_family_profiles', { p_user_ids: relatedUserIds })
       : { data: [], error: null }
 
     if (relatedUsers.error) {

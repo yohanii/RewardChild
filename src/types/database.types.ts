@@ -869,6 +869,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_family_profiles: {
+        Args: { p_user_ids: number[] }
+        Returns: {
+          id: number
+          nickname: string
+          tag: string
+        }[]
+      }
       give_attendance: {
         Args: { p_cap?: number; p_user_id: number }
         Returns: number

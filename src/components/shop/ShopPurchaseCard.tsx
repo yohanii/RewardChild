@@ -5,12 +5,14 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 export function ShopPurchaseCard({
   purchase,
   itemTitle,
+  childName,
   isParent,
   mutating,
   onFulfill,
 }: {
   purchase: ShopPurchase
   itemTitle?: string
+  childName?: string
   isParent: boolean
   mutating: boolean
   onFulfill?: () => void
@@ -30,7 +32,7 @@ export function ShopPurchaseCard({
             {itemTitle ?? `상품 #${purchase.shop_item_id}`}
           </Text>
           <Text style={styles.meta}>
-            {isParent ? `자녀 #${purchase.child_id} · ` : ''}
+            {isParent ? `${childName ?? '알 수 없는 자녀'} · ` : ''}
             {purchase.price_paid.toLocaleString()} COIN
           </Text>
         </View>

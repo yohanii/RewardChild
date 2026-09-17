@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function ShopScreen() {
   const {
-    profile, balance, loading, refreshing, error, mutating, orderedItems, purchases, purchasedSet,
+    profile, balance, loading, refreshing, error, mutating, orderedItems, purchases, purchasedSet, childNames,
     targetRelationState, createItem, updateItem, deactivateItem, purchaseItem,
     fulfillPurchase, refresh, retry,
   } = useShopScreen()
@@ -45,8 +45,8 @@ export default function ShopScreen() {
         <ScreenHeader
           title="상점"
           subtitle={isParent ? '아이에게 보여줄 보상을 관리해요.' : '모은 코인으로 받을 보상을 골라 보세요.'}
-          actionLabel={isParent && targetRelationState !== 'MULTIPLE' ? '아이템 등록' : undefined}
-          onAction={isParent && targetRelationState !== 'MULTIPLE' ? () => setCreateVisible(true) : undefined}
+          actionLabel={isParent ? '아이템 등록' : undefined}
+          onAction={isParent ? () => setCreateVisible(true) : undefined}
         />
         <ScrollView
           style={styles.list}
@@ -71,7 +71,7 @@ export default function ShopScreen() {
               </Text>
               <Text style={styles.emptySubtitle}>
                 {targetRelationState === 'MULTIPLE'
-                  ? '여러 가족 중 한 명을 임의로 선택하지 않아 관계별 정보를 표시하지 않습니다.'
+                  ? '한 명을 임의로 선택하지 않아 자녀별 잔액은 숨기고, 구매 이력은 이름과 함께 표시해요.'
                   : '가족과 연결되면 이곳에서 관계별 정보를 확인할 수 있어요.'}
               </Text>
             </View>
@@ -83,8 +83,7 @@ export default function ShopScreen() {
               compact
             />
           )}
-          {targetRelationState === 'MULTIPLE' ? null : (
-            <>
+          <>
               <Text style={styles.sectionTitle}>보상 아이템</Text>
 
               {loading ? (
@@ -148,6 +147,7 @@ export default function ShopScreen() {
                     key={purchase.id}
                     purchase={purchase}
                     itemTitle={itemTitles.get(purchase.shop_item_id)}
+                    childName={childNames[purchase.child_id]}
                     isParent={isParent}
                     mutating={mutating}
                     onFulfill={async () => {
@@ -165,8 +165,7 @@ export default function ShopScreen() {
                   />
                 ))
               )}
-            </>
-          )}
+          </>
         </ScrollView>
       </View>
 

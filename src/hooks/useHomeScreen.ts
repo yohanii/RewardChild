@@ -133,11 +133,13 @@ export function useHomeScreen() {
           const relation = relationState.relation
           const isParent = nextProfile.role === 'PARENT'
           const relatedUserId = isParent ? relation.child_id : relation.parent_id
-          const { data: relatedUser } = await supabase
-            .from('users')
-            .select('nickname')
-            .eq('id', relatedUserId)
+          const { data: relatedUser, error: relatedUserError } = await supabase
+            .rpc('get_family_profiles', { p_user_ids: [relatedUserId] })
             .maybeSingle()
+
+          if (relatedUserError) {
+            console.warn('home family profile load error', relatedUserError.message)
+          }
 
           nextConnection = {
             label: isParent ? '연결된 자녀' : '연결된 부모',

@@ -41,8 +41,7 @@ export default function RelationRequestsScreen() {
 
       const { data, error } = await supabase
         .from('relations')
-        // FK 이름 또는 컬럼명으로 관계 명시: 둘 중 프로젝트에 맞는 쪽 사용
-        .select('id, parent_id, status, parent:users!parent_id(nickname, tag)')
+        .select('id, parent_id, status')
         .eq('child_id', child.id)
         .eq('status', 'PENDING')
 
@@ -51,8 +50,22 @@ export default function RelationRequestsScreen() {
         return
       }
 
-      setRequests(data ?? [])
-      console.log('requests = ', data)
+      const relationRows = data ?? []
+      const parentIds = relationRows.map((relation) => relation.parent_id)
+      const { data: parents, error: parentsError } = parentIds.length > 0
+        ? await supabase.rpc('get_family_profiles', { p_user_ids: parentIds })
+        : { data: [], error: null }
+
+      if (parentsError) {
+        console.error(parentsError)
+        return
+      }
+
+      const parentById = new Map((parents ?? []).map((parent) => [parent.id, parent]))
+      setRequests(relationRows.map((relation) => ({
+        ...relation,
+        parent: parentById.get(relation.parent_id) ?? null,
+      })))
     }
 
     loadRequests()

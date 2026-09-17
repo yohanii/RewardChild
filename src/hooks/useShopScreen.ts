@@ -67,6 +67,7 @@ export function useShopScreen() {
   const [balance, setBalance] = useState(0)
   const [items, setItems] = useState<ShopItem[]>([])
   const [purchases, setPurchases] = useState<ShopPurchase[]>([])
+  const [childNames, setChildNames] = useState<Record<number, string>>({})
   const purchaseInFlightRef = useRef(false)
   const purchaseRetryRef = useRef<{ shopItemId: number; idempotencyKey: string } | null>(null)
   const hasLoadedRef = useRef(false)
@@ -134,10 +135,11 @@ export function useShopScreen() {
 
     const relationState = classifyRelations(data)
     if (relationState.kind === 'NONE') return { kind: 'NONE' }
+    if (p.role === 'CHILD') return { kind: 'READY', childId: p.id }
     if (relationState.kind === 'MULTIPLE') return { kind: 'MULTIPLE' }
     return {
       kind: 'READY',
-      childId: p.role === 'PARENT' ? relationState.relation.child_id : p.id,
+      childId: relationState.relation.child_id,
     }
   }, [])
 
@@ -181,7 +183,30 @@ export function useShopScreen() {
     const { data, error } = await query.order('created_at', { ascending: false })
 
     if (error) throw error
-    setPurchases(data ?? [])
+    const rows = data ?? []
+    setPurchases(rows)
+
+    if (p.role !== 'PARENT') {
+      setChildNames({})
+      return
+    }
+
+    const childIds = [...new Set(rows.map((purchase) => purchase.child_id))]
+    if (childIds.length === 0) {
+      setChildNames({})
+      return
+    }
+
+    const { data: familyProfiles, error: familyProfilesError } = await supabase
+      .rpc('get_family_profiles', { p_user_ids: childIds })
+    if (familyProfilesError) throw familyProfilesError
+
+    setChildNames(Object.fromEntries(
+      (familyProfiles ?? []).map((familyProfile) => [
+        familyProfile.id,
+        familyProfile.nickname ?? '이름 미설정 자녀',
+      ]),
+    ))
   }, [])
 
   const reload = useCallback((mode: 'focus' | 'refresh' | 'retry' = 'focus') => {
@@ -341,6 +366,7 @@ export function useShopScreen() {
     items,
     orderedItems,
     purchases,
+    childNames,
     purchasedSet,
     reload,
     refresh: () => reload('refresh'),
