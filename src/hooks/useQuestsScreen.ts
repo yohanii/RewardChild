@@ -5,7 +5,7 @@ import { showAlert } from '@/src/utils/alert'
 import { confirmAsync } from '@/src/utils/confirmAsync'
 import { classifyRelations } from '@/src/utils/relationState'
 import { router, useFocusEffect } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 export type CreateQuestPayload = {
   title: string
@@ -23,22 +23,32 @@ export const useQuestsScreen = () => {
   const [balance, setBalance] = useState<number>(0)
   const [quests, setQuests] = useState<Quest[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [mutating, setMutating] = useState(false)
   const [hasMultipleActiveRelations, setHasMultipleActiveRelations] = useState(false)
+  const hasLoadedRef = useRef(false)
+  const loadInFlightRef = useRef<Promise<void> | null>(null)
 
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null)
   const [modalVisible, setModalVisible] = useState(false)
 
-  const load = useCallback(async () => {
-    try {
-      setLoading(true)
+  const load = useCallback((mode: 'focus' | 'refresh' | 'retry' = 'focus') => {
+    if (loadInFlightRef.current) {
+      if (mode !== 'focus') setRefreshing(true)
+      return loadInFlightRef.current
+    }
+
+    if (mode !== 'focus') setRefreshing(true)
+    if (!hasLoadedRef.current) setLoading(true)
+    setError(null)
+
+    const request = (async () => {
 
       // 1) auth
       const { data: authData, error: authError } = await supabase.auth.getUser()
       if (authError) {
-        console.warn(authError)
-        showAlert('오류', '로그인 정보를 불러오지 못했어요.')
-        return
+        throw authError
       }
       if (!authData.user) {
         router.replace('/login')
@@ -53,9 +63,7 @@ export const useQuestsScreen = () => {
         .maybeSingle()
 
       if (profileError || !profileRow) {
-        console.warn(profileError)
-        showAlert('오류', '프로필 정보를 불러오지 못했어요.')
-        return
+        throw profileError ?? new Error('Profile not found')
       }
       if (!profileRow.nickname) {
         router.replace('/onboarding/nickname')
@@ -82,7 +90,7 @@ export const useQuestsScreen = () => {
         .limit(2)
 
       if (relationError) {
-        console.warn(relationError)
+        throw relationError
       }
       setHasMultipleActiveRelations(
         !relationError && classifyRelations(activeRelations).kind === 'MULTIPLE',
@@ -94,7 +102,7 @@ export const useQuestsScreen = () => {
         .eq('user_id', onboardedProfile.id)
 
       if (balanceError) {
-        console.warn(balanceError)
+        throw balanceError
       }
 
       const totalBalance =
@@ -109,26 +117,29 @@ export const useQuestsScreen = () => {
         .order('created_at', { ascending: false })
 
       if (questError) {
-        console.warn(questError)
-        showAlert('오류', '퀘스트 목록을 불러오지 못했어요.')
-        return
+        throw questError
       }
 
       setQuests(questRows ?? [])
-    } finally {
+      hasLoadedRef.current = true
+    })().catch((loadError) => {
+      console.warn('quests load error', loadError)
+      setError('퀘스트 정보를 불러오지 못했어요.')
+    }).finally(() => {
       setLoading(false)
-    }
+      setRefreshing(false)
+      loadInFlightRef.current = null
+    })
+
+    loadInFlightRef.current = request
+    return request
   }, [])
 
   useFocusEffect(
     useCallback(() => {
-      load()
+      void load('focus')
     }, [load]),
   )
-
-  useEffect(() => {
-    load()
-  }, [load])
 
   const openQuest = (quest: Quest) => {
     setSelectedQuest(quest)
@@ -354,6 +365,8 @@ export const useQuestsScreen = () => {
     balance,
     quests,
     loading,
+    refreshing,
+    error,
     mutating,
     hasMultipleActiveRelations,
     selectedQuest,
@@ -366,5 +379,7 @@ export const useQuestsScreen = () => {
     parentRejectQuest,
     getDDayLabel,
     createQuest,
+    refresh: () => load('refresh'),
+    retry: () => load('retry'),
   }
 }

@@ -2,8 +2,8 @@
 import { supabase } from '@/src/services/supabaseClient'
 import type { Enums, Tables } from '@/src/types/database.types'
 import { classifyRelations } from '@/src/utils/relationState'
-import { router } from 'expo-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { router, useFocusEffect } from 'expo-router'
+import { useCallback, useMemo, useRef, useState } from 'react'
 
 export type Profile = {
   id: number
@@ -56,6 +56,8 @@ function createIdempotencyKey() {
 
 export function useShopScreen() {
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [mutating, setMutating] = useState(false)
 
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -67,11 +69,8 @@ export function useShopScreen() {
   const [purchases, setPurchases] = useState<ShopPurchase[]>([])
   const purchaseInFlightRef = useRef(false)
   const purchaseRetryRef = useRef<{ shopItemId: number; idempotencyKey: string } | null>(null)
-
-  useEffect(() => {
-    reload()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const hasLoadedRef = useRef(false)
+  const reloadInFlightRef = useRef<Promise<void> | null>(null)
 
   const purchasedSet = useMemo(
     () => new Set(purchases.map((purchase) => purchase.shop_item_id)),
@@ -90,38 +89,17 @@ export function useShopScreen() {
     return [...unpurchased, ...purchased]
   }, [items, purchasedSet])
 
-  const reload = async () => {
-    try {
-      setLoading(true)
-      const p = await loadProfile()
-      setProfile(p)
-
-      const target = await resolveTargetChild(p)
-      const childId = target.kind === 'READY' ? target.childId : null
-      setTargetChildId(childId)
-      setTargetRelationState(target.kind)
-
-      if (childId === null) setBalance(0)
-      await Promise.all([
-        childId === null ? Promise.resolve() : loadBalance(childId),
-        loadShopItems(p),
-        loadPurchases(p),
-      ])
-    } catch (e) {
-      console.warn('useShopScreen.reload error', e)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadProfile = async (): Promise<Profile> => {
+  const loadProfile = useCallback(async (): Promise<Profile> => {
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser()
 
     if (authError) throw authError
-    if (!user) throw new Error('No auth user')
+    if (!user) {
+      router.replace('/login')
+      throw new Error('No auth user')
+    }
 
     const { data, error } = await supabase
       .from('users')
@@ -137,9 +115,9 @@ export function useShopScreen() {
     }
 
     return { id: data.id, role: data.role, nickname: data.nickname }
-  }
+  }, [])
 
-  const resolveTargetChild = async (
+  const resolveTargetChild = useCallback(async (
     p: Profile,
   ): Promise<{ kind: 'READY'; childId: number } | { kind: 'NONE' | 'MULTIPLE' }> => {
     const relationColumn = p.role === 'PARENT' ? 'parent_id' : 'child_id'
@@ -161,9 +139,9 @@ export function useShopScreen() {
       kind: 'READY',
       childId: p.role === 'PARENT' ? relationState.relation.child_id : p.id,
     }
-  }
+  }, [])
 
-  const loadBalance = async (userId: number) => {
+  const loadBalance = useCallback(async (userId: number) => {
     const { data, error } = await supabase
         .from('balances')
         .select('type, amount')
@@ -172,9 +150,9 @@ export function useShopScreen() {
 
     if (error) throw error
     setBalance((data ?? []).reduce((sum, row) => sum + row.amount, 0))
-  }
+  }, [])
 
-  const loadShopItems = async (p: Profile) => {
+  const loadShopItems = useCallback(async (p: Profile) => {
     let query = supabase
       .from('shop_items')
       .select('id, parent_id, title, content, price, is_active, sort_order, created_at, updated_at')
@@ -189,9 +167,9 @@ export function useShopScreen() {
 
     if (error) throw error
     setItems(data ?? [])
-  }
+  }, [])
 
-  const loadPurchases = async (p: Profile) => {
+  const loadPurchases = useCallback(async (p: Profile) => {
     let query = supabase
       .from('shop_purchases')
       .select('id, child_id, shop_item_id, price_paid, quantity, status, created_at, fulfilled_at')
@@ -204,7 +182,52 @@ export function useShopScreen() {
 
     if (error) throw error
     setPurchases(data ?? [])
-  }
+  }, [])
+
+  const reload = useCallback((mode: 'focus' | 'refresh' | 'retry' = 'focus') => {
+    if (reloadInFlightRef.current) {
+      if (mode !== 'focus') setRefreshing(true)
+      return reloadInFlightRef.current
+    }
+
+    if (mode !== 'focus') setRefreshing(true)
+    if (!hasLoadedRef.current) setLoading(true)
+    setError(null)
+
+    const request = (async () => {
+      const p = await loadProfile()
+      setProfile(p)
+
+      const target = await resolveTargetChild(p)
+      const childId = target.kind === 'READY' ? target.childId : null
+      setTargetChildId(childId)
+      setTargetRelationState(target.kind)
+
+      if (childId === null) setBalance(0)
+      await Promise.all([
+        childId === null ? Promise.resolve() : loadBalance(childId),
+        loadShopItems(p),
+        loadPurchases(p),
+      ])
+      hasLoadedRef.current = true
+    })().catch((reloadError) => {
+      console.warn('shop reload error', reloadError)
+      setError('상점 정보를 불러오지 못했어요.')
+    }).finally(() => {
+      setLoading(false)
+      setRefreshing(false)
+      reloadInFlightRef.current = null
+    })
+
+    reloadInFlightRef.current = request
+    return request
+  }, [loadBalance, loadProfile, loadPurchases, loadShopItems, resolveTargetChild])
+
+  useFocusEffect(
+    useCallback(() => {
+      void reload('focus')
+    }, [reload]),
+  )
 
   const createItem = async (payload: CreateItemPayload) => {
     if (!profile || profile.role !== 'PARENT') return
@@ -312,12 +335,16 @@ export function useShopScreen() {
     targetRelationState,
     balance,
     loading,
+    refreshing,
+    error,
     mutating,
     items,
     orderedItems,
     purchases,
     purchasedSet,
     reload,
+    refresh: () => reload('refresh'),
+    retry: () => reload('retry'),
     createItem,
     updateItem,
     deactivateItem,

@@ -7,20 +7,33 @@ import { type ShopItem, useShopScreen } from '@/src/hooks/useShopScreen'
 import { confirmAsync } from '@/src/utils/confirmAsync'
 import { showAlert } from '@/src/utils/alert'
 import React, { useState } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function ShopScreen() {
   const {
-    profile, balance, loading, mutating, orderedItems, purchases, purchasedSet,
+    profile, balance, loading, refreshing, error, mutating, orderedItems, purchases, purchasedSet,
     targetRelationState, createItem, updateItem, deactivateItem, purchaseItem,
-    fulfillPurchase, reload,
+    fulfillPurchase, refresh, retry,
   } = useShopScreen()
   const [createVisible, setCreateVisible] = useState(false)
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null)
 
   if (loading && !profile) {
     return <View style={styles.loadingContainer}><ActivityIndicator color="#2563EB" /></View>
+  }
+  if (!profile) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.centeredError}>
+          <Text style={styles.errorTitle}>{error ?? '상점 정보를 표시할 수 없어요.'}</Text>
+          <Text style={styles.errorSubtitle}>네트워크 연결을 확인하고 다시 시도해 주세요.</Text>
+          <Pressable style={styles.retryButton} onPress={retry} accessibilityRole="button">
+            <Text style={styles.retryButtonText}>다시 시도</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    )
   }
 
   const isParent = profile?.role === 'PARENT'
@@ -35,7 +48,22 @@ export default function ShopScreen() {
           actionLabel={isParent && targetRelationState !== 'MULTIPLE' ? '아이템 등록' : undefined}
           onAction={isParent && targetRelationState !== 'MULTIPLE' ? () => setCreateVisible(true) : undefined}
         />
-        <ScrollView style={styles.list} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.list}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          alwaysBounceVertical
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#2563EB" colors={['#2563EB']} />}
+        >
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorTitle}>{error}</Text>
+              <Text style={styles.errorSubtitle}>기존 화면은 유지했어요. 다시 조회해 주세요.</Text>
+              <Pressable style={styles.retryButton} onPress={retry} accessibilityRole="button">
+                <Text style={styles.retryButtonText}>다시 시도</Text>
+              </Pressable>
+            </View>
+          )}
           {targetRelationState !== 'READY' ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyTitle}>
@@ -150,7 +178,6 @@ export default function ShopScreen() {
           try {
             await createItem(payload)
             setCreateVisible(false)
-            await reload()
           } catch (error) {
             showAlert('상품 등록 실패', error instanceof Error ? error.message : '다시 시도해주세요.')
           }
@@ -185,6 +212,12 @@ const styles = StyleSheet.create({
   emptyContainer: { padding: 20, borderRadius: 20, backgroundColor: '#FFFFFF' },
   emptyTitle: { color: '#1E293B', fontSize: 16, fontWeight: '700' },
   emptySubtitle: { color: '#64748B', fontSize: 13, lineHeight: 19, marginTop: 5 },
+  centeredError: { flex: 1, margin: 20, padding: 22, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
+  errorContainer: { padding: 20, borderRadius: 20, alignItems: 'flex-start', backgroundColor: '#FFFFFF' },
+  errorTitle: { color: '#1E293B', fontSize: 16, fontWeight: '700' },
+  errorSubtitle: { color: '#64748B', fontSize: 13, lineHeight: 19, marginTop: 5 },
+  retryButton: { marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#2563EB' },
+  retryButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
   list: { flex: 1, marginHorizontal: -2 },
   scrollContent: { paddingHorizontal: 2, paddingBottom: 28, gap: 12 },
 })
