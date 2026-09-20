@@ -1,13 +1,14 @@
 // src/components/quests/QuestStatusChip.tsx
 import React from 'react'
-import { StyleSheet, Text, View, ViewStyle, TextStyle } from 'react-native'
+import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native'
 import type { Quest, QuestStatus } from '@/src/types/quest'
 import { getQuestStatusLabel } from '@/src/utils/questDisplay'
+import { colors, radius, spacing, typography } from '@/src/theme/tokens'
 
 type Props = {
   status: Quest['status']
-  style?: ViewStyle
-  textStyle?: TextStyle
+  style?: StyleProp<ViewStyle>
+  textStyle?: StyleProp<TextStyle>
 }
 
 const getStatusStyle = (status: QuestStatus | null) => {
@@ -17,30 +18,35 @@ const getStatusStyle = (status: QuestStatus | null) => {
         label: getQuestStatusLabel(status),
         container: styles.statusRegistered,
         text: styles.statusRegisteredText,
+        dotColor: colors.primary,
       }
     case 'REQUESTED':
       return {
         label: getQuestStatusLabel(status),
         container: styles.statusRequested,
         text: styles.statusRequestedText,
+        dotColor: colors.child,
       }
     case 'COMPLETED':
       return {
         label: getQuestStatusLabel(status),
         container: styles.statusCompleted,
         text: styles.statusCompletedText,
+        dotColor: colors.success,
       }
     case 'REJECTED':
       return {
         label: getQuestStatusLabel(status),
         container: styles.statusRejected,
         text: styles.statusRejectedText,
+        dotColor: colors.warning,
       }
     default:
       return {
         label: getQuestStatusLabel(status),
         container: styles.statusRegistered,
         text: styles.statusRegisteredText,
+        dotColor: colors.primary,
       }
   }
 }
@@ -50,6 +56,7 @@ export const QuestStatusChip: React.FC<Props> = ({ status, style, textStyle }) =
 
   return (
     <View style={[styles.statusChip, s.container, style]}>
+      <View style={[styles.sealDot, { backgroundColor: s.dotColor }]} />
       <Text style={[styles.statusChipText, s.text, textStyle]}>{s.label}</Text>
     </View>
   )
@@ -57,36 +64,39 @@ export const QuestStatusChip: React.FC<Props> = ({ status, style, textStyle }) =
 
 const styles = StyleSheet.create({
   statusChip: {
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-    borderRadius: 999,
+    paddingVertical: spacing.xxs,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
-  statusChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
+  sealDot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: colors.textSecondary },
+  statusChipText: { ...typography.caption, fontSize: 11, lineHeight: 16, fontWeight: '800' },
   statusRegistered: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.goldSoft,
   },
   statusRegisteredText: {
-    color: '#475569',
+    color: colors.primary,
   },
   statusRequested: {
-    backgroundColor: '#FFF7ED',
+    backgroundColor: colors.childSoft,
   },
   statusRequestedText: {
-    color: '#C2410C',
+    color: colors.child,
   },
   statusCompleted: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: colors.successSoft,
   },
   statusCompletedText: {
-    color: '#047857',
+    color: colors.success,
   },
   statusRejected: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.warningSoft,
   },
   statusRejectedText: {
-    color: '#B91C1C',
+    color: colors.warning,
   },
 })

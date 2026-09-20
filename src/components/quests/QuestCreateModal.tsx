@@ -1,16 +1,22 @@
-// src/components/quests/QuestCreateModal.tsx
+import {
+  ParchmentCard,
+  PrimaryButton,
+  SecondaryButton,
+} from '@/src/components/common/FantasyPrimitives'
+import { colors, layout, radius, shadows, spacing, typography } from '@/src/theme/tokens'
 import { showAlert } from '@/src/utils/alert'
+import { Ionicons } from '@expo/vector-icons'
 import React, { useEffect, useState } from 'react'
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native'
 
 export type QuestCreatePayload = {
@@ -36,7 +42,6 @@ export const QuestCreateModal: React.FC<Props> = ({
   const [content, setContent] = useState('')
   const [rewardText, setRewardText] = useState('')
 
-  // 모달 열릴 때마다 입력값 초기화
   useEffect(() => {
     if (visible) {
       setTitle('')
@@ -68,95 +73,101 @@ export const QuestCreateModal: React.FC<Props> = ({
     const ok = await onSubmit({
       title: trimmedTitle,
       reward: parsedReward,
-      content: trimmedContent.length > 0 ? trimmedContent : undefined, // 선택 입력
+      content: trimmedContent.length > 0 ? trimmedContent : undefined,
     })
 
-    if (ok) {
-      onClose()
-    }
+    if (ok) onClose()
   }
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.content}>
-          {/* 헤더 */}
+        <ParchmentCard style={styles.content}>
+          <View style={styles.pinRow} accessibilityElementsHidden>
+            <View style={styles.pin} />
+            <Text style={styles.documentLabel}>NEW QUEST NOTICE</Text>
+            <View style={styles.pin} />
+          </View>
+
           <View style={styles.headerRow}>
-            <Text style={styles.title}>새 퀘스트 등록</Text>
-            <Pressable onPress={onClose} hitSlop={10}>
-              <Text style={styles.closeText}>✕</Text>
+            <View style={styles.titleCopy}>
+              <Text style={styles.eyebrow}>용병술집 게시판</Text>
+              <Text style={styles.title}>새 의뢰서 작성</Text>
+              <Text style={styles.subtitle}>용사가 이해하기 쉽도록 할 일과 보상을 적어주세요.</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="새 의뢰 등록 닫기"
+              onPress={onClose}
+              hitSlop={spacing.xs}
+              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
+            >
+              <Ionicons name="close" size={22} color={colors.textPrimary} />
             </Pressable>
           </View>
 
-          <ScrollView style={styles.body} keyboardShouldPersistTaps="handled">
-            {/* 제목 */}
+          <ScrollView
+            style={styles.body}
+            contentContainerStyle={styles.bodyContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.field}>
-              <Text style={styles.label}>
-                제목 <Text style={styles.required}>*</Text>
-              </Text>
+              <Text style={styles.label}>의뢰 제목 <Text style={styles.required}>*</Text></Text>
               <TextInput
                 style={styles.input}
                 placeholder="예: 오늘 숙제 30분 하기"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.disabled}
                 value={title}
                 onChangeText={setTitle}
               />
             </View>
 
-            {/* 내용 (선택) */}
             <View style={styles.field}>
-              <Text style={styles.label}>내용 (선택)</Text>
+              <Text style={styles.label}>의뢰 내용 (선택)</Text>
               <TextInput
                 style={[styles.input, styles.textarea]}
-                placeholder="퀘스트에 대한 자세한 설명을 적어주세요."
-                placeholderTextColor="#94A3B8"
+                placeholder="완료 조건이나 응원의 말을 적어주세요."
+                placeholderTextColor={colors.disabled}
                 multiline
                 value={content}
                 onChangeText={setContent}
               />
             </View>
 
-            {/* 재화 */}
             <View style={styles.field}>
-              <Text style={styles.label}>
-                보상 재화 <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="예: 100"
-                placeholderTextColor="#94A3B8"
-                keyboardType="number-pad"
-                value={rewardText}
-                onChangeText={setRewardText}
-              />
-              <Text style={styles.helperText}>1 이상 숫자로 입력해주세요.</Text>
+              <Text style={styles.label}>보상 금화 <Text style={styles.required}>*</Text></Text>
+              <View style={styles.rewardInputRow}>
+                <Ionicons name="sparkles" size={19} color={colors.accentGold} />
+                <TextInput
+                  style={styles.rewardInput}
+                  placeholder="예: 100"
+                  placeholderTextColor={colors.disabled}
+                  keyboardType="number-pad"
+                  value={rewardText}
+                  onChangeText={setRewardText}
+                />
+                <Text style={styles.rewardUnit}>COIN</Text>
+              </View>
+              <Text style={styles.helperText}>1 이상의 숫자를 입력해 주세요.</Text>
             </View>
           </ScrollView>
 
-          {/* 버튼 영역 */}
           <View style={styles.footer}>
-            <Pressable style={[styles.button, styles.cancelButton]} onPress={onClose}>
-              <Text style={styles.cancelButtonText}>취소</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.button, styles.submitButton]}
+            <SecondaryButton label="취소" onPress={onClose} disabled={mutating} style={styles.footerButton} />
+            <PrimaryButton
+              label={mutating ? '게시 중...' : '의뢰서 게시'}
               onPress={handleSubmit}
               disabled={mutating}
-            >
-              <Text style={styles.submitButtonText}>
-                {mutating ? '등록 중...' : '등록하기'}
-              </Text>
-            </Pressable>
+              loading={mutating}
+              leading={<Ionicons name="pin-outline" size={18} color={colors.onPrimary} />}
+              style={[styles.footerButton, styles.submitButton]}
+            />
           </View>
-        </View>
+        </ParchmentCard>
       </KeyboardAvoidingView>
     </Modal>
   )
@@ -165,93 +176,74 @@ export const QuestCreateModal: React.FC<Props> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.4)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: layout.screenHorizontalPadding,
+    paddingVertical: spacing['2xl'],
   },
   content: {
-    maxHeight: '85%',
-    borderRadius: 20,
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    width: '100%',
+    maxWidth: 560,
+    maxHeight: '90%',
+    alignSelf: 'center',
+    padding: spacing.lg,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.xl,
+    borderBottomRightRadius: radius.lg,
+    borderBottomLeftRadius: radius.xl,
+    ...shadows.raised,
   },
-  headerRow: {
+  pinRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  pin: { width: 9, height: 9, borderRadius: radius.pill, backgroundColor: colors.wood, borderWidth: 2, borderColor: colors.accentGold },
+  documentLabel: { color: colors.textSecondary, fontSize: 9, lineHeight: 12, fontWeight: '800', letterSpacing: 1.4 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  titleCopy: { flex: 1 },
+  eyebrow: { ...typography.caption, color: colors.parent, fontWeight: '800' },
+  title: { ...typography.sectionTitle, marginTop: spacing.xxs, color: colors.textPrimary },
+  subtitle: { ...typography.caption, marginTop: spacing.xxs, color: colors.textSecondary },
+  closeButton: {
+    width: layout.minTouchTarget,
+    height: layout.minTouchTarget,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  pressed: { opacity: 0.72 },
+  body: { marginTop: spacing.md, marginBottom: spacing.sm },
+  bodyContent: { gap: spacing.md, paddingBottom: spacing.xs },
+  field: { gap: spacing.xs },
+  label: { ...typography.caption, color: colors.textPrimary, fontWeight: '800' },
+  required: { color: colors.danger },
+  input: {
+    minHeight: layout.minTouchTarget,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    color: colors.textPrimary,
+    backgroundColor: colors.surface,
+    ...typography.body,
+  },
+  textarea: { minHeight: 104, textAlignVertical: 'top' },
+  rewardInputRow: {
+    minHeight: layout.minTouchTarget,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    gap: spacing.xs,
+    backgroundColor: colors.surface,
   },
-  title: {
-    flex: 1,
-    color: '#0F172A',
-    fontSize: 18,
-    fontWeight: '700',
-    marginRight: 8,
-  },
-  closeText: {
-    color: '#64748B',
-    fontSize: 18,
-  },
-  body: {
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  field: {
-    marginBottom: 12,
-  },
-  label: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  required: {
-    color: '#F97316',
-  },
-  input: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    color: '#0F172A',
-    fontSize: 14,
-    backgroundColor: '#F8FAFC',
-  },
-  textarea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  helperText: {
-    marginTop: 4,
-    fontSize: 11,
-    color: '#64748B',
-  },
-  footer: {
-    marginTop: 4,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-  },
-  button: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-  },
-  cancelButton: {
-    backgroundColor: '#F1F5F9',
-  },
-  cancelButtonText: {
-    color: '#475569',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  submitButton: {
-    backgroundColor: '#2563EB',
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
+  rewardInput: { flex: 1, paddingVertical: spacing.xs, color: colors.textPrimary, ...typography.body },
+  rewardUnit: { color: colors.onGold, fontSize: 10, lineHeight: 15, fontWeight: '800' },
+  helperText: { ...typography.caption, color: colors.textSecondary },
+  footer: { flexDirection: 'row', gap: spacing.xs },
+  footerButton: { flex: 1 },
+  submitButton: { backgroundColor: colors.parent },
 })

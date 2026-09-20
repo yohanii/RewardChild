@@ -1,6 +1,13 @@
-// src/components/quests/QuestCard.tsx
+import {
+  CoinBadge,
+  ParchmentCard,
+  PrimaryButton,
+  SecondaryButton,
+} from '@/src/components/common/FantasyPrimitives'
+import { colors, radius, shadows, spacing, typography } from '@/src/theme/tokens'
 import type { Quest, UserRole } from '@/src/types/quest'
 import { getQuestDateLabel, getQuestStatusDescription } from '@/src/utils/questDisplay'
+import { Ionicons } from '@expo/vector-icons'
 import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { QuestStatusChip } from './QuestStatusChip'
@@ -28,150 +35,147 @@ export const QuestCard: React.FC<Props> = ({
 }) => {
   const isParent = role === 'PARENT'
   const isChild = role === 'CHILD'
+  const isCompleted = quest.status === 'COMPLETED'
 
   return (
-    <Pressable style={styles.card} onPress={onPress}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title} numberOfLines={1}>
-          {quest.title}
-        </Text>
-        <QuestStatusChip status={quest.status} />
-      </View>
-
-      <View style={styles.metaRow}>
-        <View style={styles.rewardBox}>
-          <Text style={styles.rewardLabel}>보상</Text>
-          <Text style={styles.rewardValue}>{quest.reward.toLocaleString()} COIN</Text>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${quest.title} 의뢰 상세 보기`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}
+    >
+      <ParchmentCard style={[styles.card, isCompleted && styles.cardCompleted]}>
+        <View style={styles.pinRow} accessibilityElementsHidden>
+          <View style={styles.pin} />
+          <View style={styles.pin} />
         </View>
-        <Text style={styles.dateText}>{getQuestDateLabel(quest)}</Text>
-      </View>
 
-      <Text style={styles.statusDescription}>{getQuestStatusDescription(quest.status, role)}</Text>
+        <View style={styles.headerRow}>
+          <View style={[styles.emblem, isCompleted && styles.emblemCompleted]}>
+            <Ionicons
+              name={isCompleted ? 'checkmark-outline' : 'document-text-outline'}
+              size={22}
+              color={isCompleted ? colors.success : colors.primary}
+            />
+          </View>
+          <View style={styles.titleCopy}>
+            <Text style={styles.kicker}>길드 의뢰서</Text>
+            <Text style={styles.title} numberOfLines={2}>{quest.title}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={19} color={colors.textSecondary} />
+        </View>
 
-      {/* 역할별 버튼 */}
-      <View style={styles.actionsRow}>
-        {isParent && (
-          <>
-            {quest.status === 'REQUESTED' && onApprove && (
-              <Pressable
-                style={[styles.actionButton, styles.approveButton]}
-                onPress={onApprove}
-                disabled={mutating}
-              >
-                <Text style={styles.actionButtonText}>승인</Text>
-              </Pressable>
-            )}
-            {quest.status === 'REQUESTED' && onReject && (
-              <Pressable
-                style={[styles.actionButton, styles.rejectButton]}
-                onPress={onReject}
-                disabled={mutating}
-              >
-                <Text style={styles.actionButtonText}>반려</Text>
-              </Pressable>
-            )}
-            {quest.status === 'REGISTERED' && onDelete && (
-              <Pressable
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={onDelete}
-                disabled={mutating}
-              >
-                <Text style={styles.actionButtonText}>삭제</Text>
-              </Pressable>
-            )}
-          </>
-        )}
+        <View style={styles.metaRow}>
+          <QuestStatusChip status={quest.status} />
+          <CoinBadge amount={quest.reward} compact />
+        </View>
 
-        {isChild &&
-          (quest.status === 'REGISTERED' || quest.status === 'REJECTED') &&
-          onRequest && (
-          <Pressable
-            style={[styles.actionButton, styles.requestButton]}
-            onPress={onRequest}
-            disabled={mutating}
-          >
-            <Text style={styles.actionButtonText}>
-              {quest.status === 'REJECTED' ? '다시 완료 요청' : '완료 요청'}
-            </Text>
-          </Pressable>
-        )}
-      </View>
+        <Text style={styles.statusDescription}>{getQuestStatusDescription(quest.status, role)}</Text>
+
+        <View style={styles.dateRow}>
+          <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+          <Text style={styles.dateText}>{getQuestDateLabel(quest)}</Text>
+        </View>
+
+        <View style={styles.actionsRow}>
+          {isParent && quest.status === 'REQUESTED' && onApprove ? (
+            <PrimaryButton
+              label="완료 승인"
+              onPress={onApprove}
+              disabled={mutating}
+              leading={<Ionicons name="checkmark-circle-outline" size={17} color={colors.onPrimary} />}
+              style={[styles.actionButton, styles.approveButton]}
+            />
+          ) : null}
+          {isParent && quest.status === 'REQUESTED' && onReject ? (
+            <SecondaryButton
+              label="보완 요청"
+              onPress={onReject}
+              disabled={mutating}
+              style={[styles.actionButton, styles.rejectButton]}
+              textStyle={styles.rejectButtonText}
+            />
+          ) : null}
+          {isParent && quest.status === 'REGISTERED' && onDelete ? (
+            <SecondaryButton
+              label="의뢰 삭제"
+              onPress={onDelete}
+              disabled={mutating}
+              style={[styles.actionButton, styles.deleteButton]}
+              textStyle={styles.deleteButtonText}
+            />
+          ) : null}
+          {isChild && (quest.status === 'REGISTERED' || quest.status === 'REJECTED') && onRequest ? (
+            <PrimaryButton
+              label={quest.status === 'REJECTED' ? '다시 완료 보고' : '완료 보고'}
+              onPress={onRequest}
+              disabled={mutating}
+              leading={<Ionicons name="paper-plane-outline" size={17} color={colors.onPrimary} />}
+              style={[styles.actionButton, styles.requestButton]}
+            />
+          ) : null}
+        </View>
+      </ParchmentCard>
     </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
+  pressable: { borderRadius: radius.lg },
+  pressed: { opacity: 0.82 },
   card: {
-    padding: 17,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 1,
+    paddingTop: spacing.sm,
+    borderTopLeftRadius: radius.md,
+    borderTopRightRadius: radius.lg,
+    borderBottomRightRadius: radius.md,
+    borderBottomLeftRadius: radius.lg,
+    backgroundColor: colors.parchment,
+    ...shadows.card,
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  cardCompleted: { backgroundColor: colors.surface, opacity: 0.9 },
+  pinRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.xxs, marginBottom: spacing.xxs },
+  pin: {
+    width: 8,
+    height: 8,
+    borderRadius: radius.pill,
+    backgroundColor: colors.wood,
+    borderWidth: 2,
+    borderColor: colors.accentGold,
+  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  emblem: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.lg,
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
+    backgroundColor: colors.goldSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  title: {
-    flex: 1,
-    color: '#1E293B',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
-  },
+  emblemCompleted: { backgroundColor: colors.successSoft },
+  titleCopy: { flex: 1 },
+  kicker: { ...typography.caption, color: colors.textSecondary, fontSize: 10, lineHeight: 14, fontWeight: '800' },
+  title: { ...typography.cardTitle, marginTop: 1, color: colors.textPrimary },
   metaRow: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-    marginTop: 4,
+    justifyContent: 'space-between',
+    gap: spacing.xs,
   },
-  rewardBox: {
-    flexDirection: 'column',
-  },
-  rewardLabel: {
-    color: '#94A3B8',
-    fontSize: 11,
-  },
-  rewardValue: {
-    color: '#2563EB',
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  dateText: { color: '#64748B', fontSize: 11, fontWeight: '600' },
-  statusDescription: { color: '#64748B', fontSize: 12, lineHeight: 18, marginTop: 2 },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 6,
-    gap: 8,
-  },
-  actionButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-  },
-  approveButton: {
-    backgroundColor: '#22C55E',
-  },
-  rejectButton: {
-    backgroundColor: '#F97316',
-  },
-  deleteButton: {
-    backgroundColor: '#EF4444',
-  },
-  requestButton: {
-    backgroundColor: '#3B82F6',
-  },
-  actionButtonText: {
-    color: '#F9FAFB',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  statusDescription: { ...typography.caption, marginTop: spacing.sm, color: colors.textPrimary },
+  dateRow: { marginTop: spacing.xs, flexDirection: 'row', alignItems: 'center', gap: spacing.xxs },
+  dateText: { ...typography.caption, color: colors.textSecondary, fontSize: 11, lineHeight: 16 },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', marginTop: spacing.sm, gap: spacing.xs },
+  actionButton: { minHeight: 40, borderRadius: radius.md },
+  approveButton: { flex: 1, minWidth: 118, backgroundColor: colors.success },
+  rejectButton: { flex: 1, minWidth: 110, borderColor: colors.warning, backgroundColor: colors.warningSoft },
+  rejectButtonText: { color: colors.warning },
+  deleteButton: { minWidth: 112, borderColor: colors.danger, backgroundColor: colors.dangerSoft },
+  deleteButtonText: { color: colors.danger },
+  requestButton: { flex: 1, minWidth: 150, backgroundColor: colors.child },
 })
