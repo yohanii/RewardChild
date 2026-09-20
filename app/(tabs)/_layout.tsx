@@ -1,10 +1,11 @@
 import { ScreenLoading } from '@/src/components/common/ScreenState'
 import { supabase } from '@/src/services/supabaseClient'
+import { colors, radius } from '@/src/theme/tokens'
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import React, { useEffect, useState } from 'react'
-import { StyleSheet } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type TabRole = 'PARENT' | 'CHILD' | null
@@ -14,7 +15,11 @@ function tabIcon(
   inactiveName: React.ComponentProps<typeof Ionicons>['name'],
 ) {
   return function Icon({ color, size, focused }: { color: string; size: number; focused: boolean }) {
-    return <Ionicons name={focused ? activeName : inactiveName} size={size} color={color} />
+    return (
+      <View style={[styles.iconFrame, focused && styles.iconFrameActive]}>
+        <Ionicons name={focused ? activeName : inactiveName} size={size} color={color} />
+      </View>
+    )
   }
 }
 
@@ -62,23 +67,24 @@ export default function TabsLayout() {
         initialRouteName="home/index"
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: '#2563EB',
-          tabBarInactiveTintColor: '#94A3B8',
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textSecondary,
           tabBarLabelStyle: styles.tabLabel,
+          tabBarIconStyle: styles.tabIcon,
           tabBarItemStyle: styles.tabItem,
-          tabBarStyle: [styles.tabBar, { height: 62 + insets.bottom, paddingBottom: Math.max(insets.bottom, 8) }],
+          tabBarStyle: [styles.tabBar, { height: 58 + insets.bottom, paddingBottom: Math.max(insets.bottom, 6) }],
           sceneStyle: styles.scene,
         }}
       >
         <Tabs.Screen name="home/index" options={{ title: '홈', tabBarIcon: tabIcon('home', 'home-outline') }} />
-        <Tabs.Screen name="quests/index" options={{ title: '퀘스트', tabBarIcon: tabIcon('checkmark-circle', 'checkmark-circle-outline') }} />
-        <Tabs.Screen name="shop/index" options={{ title: '상점', tabBarIcon: tabIcon('bag-handle', 'bag-handle-outline') }} />
+        <Tabs.Screen name="quests/index" options={{ title: '퀘스트', tabBarIcon: tabIcon('shield', 'shield-outline') }} />
+        <Tabs.Screen name="shop/index" options={{ title: '상점', tabBarIcon: tabIcon('storefront', 'storefront-outline') }} />
         <Tabs.Screen
           name="bank/index"
           options={{
             title: '은행',
             href: role === 'PARENT' ? '/bank' : null,
-            tabBarIcon: tabIcon('card', 'card-outline'),
+            tabBarIcon: tabIcon('business', 'business-outline'),
           }}
         />
       </Tabs>
@@ -87,17 +93,37 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  scene: { backgroundColor: '#F6F7FB' },
+  scene: { backgroundColor: colors.background },
   tabBar: {
-    paddingTop: 8,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 0,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    elevation: 8,
+    paddingTop: 4,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.accentGold,
+    shadowColor: colors.wood,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    elevation: 12,
   },
-  tabItem: { paddingVertical: 2 },
-  tabLabel: { fontSize: 11, fontWeight: '700', marginTop: 2 },
+  tabItem: { paddingTop: 1 },
+  tabIcon: { marginTop: 0 },
+  tabLabel: { fontSize: 11, lineHeight: 14, fontWeight: '800', marginTop: 1 },
+  iconFrame: {
+    width: 40,
+    height: 30,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  iconFrameActive: {
+    backgroundColor: colors.goldSoft,
+    borderColor: colors.accentGold,
+    shadowColor: colors.accentGold,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.24,
+    shadowRadius: 5,
+    elevation: 3,
+  },
 })
