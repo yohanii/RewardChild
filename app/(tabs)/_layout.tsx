@@ -1,9 +1,10 @@
+import { ScreenLoading } from '@/src/components/common/ScreenState'
 import { supabase } from '@/src/services/supabaseClient'
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, StyleSheet, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type TabRole = 'PARENT' | 'CHILD' | null
@@ -51,7 +52,7 @@ export default function TabsLayout() {
   }, [])
 
   if (loading) {
-    return <View style={styles.loadingContainer}><ActivityIndicator color="#2563EB" /></View>
+    return <ScreenLoading label="앱 정보를 불러오는 중..." />
   }
 
   return (
@@ -86,7 +87,6 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F7FB' },
   scene: { backgroundColor: '#F6F7FB' },
   tabBar: {
     paddingTop: 8,

@@ -1,7 +1,7 @@
 import { supabase } from '@/src/services/supabaseClient'
 import type { Enums } from '@/src/types/database.types'
 import { router, useFocusEffect } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 type SettingsRole = Exclude<Enums<'user_role'>, 'DEFAULT'>
 
@@ -22,16 +22,22 @@ export function useSettingsScreen() {
   const [profile, setProfile] = useState<SettingsProfile | null>(null)
   const [relations, setRelations] = useState<ActiveRelation[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [blockingRelationId, setBlockingRelationId] = useState<number | null>(null)
+  const hasLoadedRef = useRef(false)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (mode: 'focus' | 'refresh' | 'retry' = 'focus') => {
+    if (!hasLoadedRef.current) setLoading(true)
+    if (mode === 'refresh') setRefreshing(true)
+    setError(null)
 
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    if (authError || !authData.user) {
-      router.replace('/login')
-      return
-    }
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      if (authError || !authData.user) {
+        router.replace('/login')
+        return
+      }
 
     const { data: profileRow, error: profileError } = await supabase
       .from('users')
@@ -39,11 +45,7 @@ export function useSettingsScreen() {
       .eq('auth_user_id', authData.user.id)
       .maybeSingle()
 
-    if (profileError || !profileRow) {
-      console.warn('settings profile load error', profileError?.message)
-      setLoading(false)
-      return
-    }
+      if (profileError || !profileRow) throw profileError ?? new Error('PROFILE_NOT_FOUND')
 
     if (!profileRow.nickname || !profileRow.tag || profileRow.role === 'DEFAULT') {
       router.replace('/')
@@ -64,9 +66,7 @@ export function useSettingsScreen() {
       .eq('status', 'ACTIVE')
       .order('id')
 
-    if (relationError) {
-      console.warn('settings relation load error', relationError.message)
-    }
+      if (relationError) throw relationError
 
     const rows = relationRows ?? []
     const relatedUserIds = rows.map((relation) =>
@@ -76,9 +76,7 @@ export function useSettingsScreen() {
       ? await supabase.rpc('get_family_profiles', { p_user_ids: relatedUserIds })
       : { data: [], error: null }
 
-    if (relatedUsers.error) {
-      console.warn('settings related users load error', relatedUsers.error.message)
-    }
+      if (relatedUsers.error) throw relatedUsers.error
 
     const relatedUserById = new Map((relatedUsers.data ?? []).map((user) => [user.id, user]))
     setProfile(nextProfile)
@@ -91,15 +89,19 @@ export function useSettingsScreen() {
         relatedTag: relatedUser?.tag ?? null,
       }
     }))
-    setLoading(false)
+      hasLoadedRef.current = true
+    } catch (loadError) {
+      console.warn('settings load error', loadError)
+      setError('설정 정보를 불러오지 못했어요.')
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
   }, [])
 
   useFocusEffect(
     useCallback(() => {
-      load().catch((error) => {
-        console.warn('settings load error', error)
-        setLoading(false)
-      })
+      void load('focus')
     }, [load]),
   )
 
@@ -115,9 +117,19 @@ export function useSettingsScreen() {
       return false
     }
 
-    await load()
+    await load('retry')
     return true
   }, [blockingRelationId, load])
 
-  return { profile, relations, loading, blockingRelationId, blockRelation }
+  return {
+    profile,
+    relations,
+    loading,
+    refreshing,
+    error,
+    blockingRelationId,
+    blockRelation,
+    refresh: () => load('refresh'),
+    retry: () => load('retry'),
+  }
 }

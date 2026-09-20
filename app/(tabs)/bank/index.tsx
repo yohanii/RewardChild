@@ -1,5 +1,6 @@
 import { BalanceCard } from '@/src/components/common/BalanceCard'
 import { ScreenHeader } from '@/src/components/common/ScreenHeader'
+import { ScreenLoading, StateCard } from '@/src/components/common/ScreenState'
 import { useBankScreen, type BankFeedback } from '@/src/hooks/useBankScreen'
 import { Ionicons } from '@expo/vector-icons'
 import React from 'react'
@@ -43,6 +44,7 @@ function FeedbackBanner({ feedback }: { feedback: BankFeedback }) {
 export default function BankScreen() {
   const {
     balance,
+    ready,
     billingMode,
     connected,
     feedback,
@@ -55,11 +57,25 @@ export default function BankScreen() {
     purchaseProduct,
     reconnectBilling,
     recoverPurchases,
+    retryBankData,
     refreshBankData,
   } = useBankScreen()
 
   if (loading) {
-    return <View style={styles.loadingContainer}><ActivityIndicator color="#2563EB" /></View>
+    return <ScreenLoading label="Bank 정보를 불러오는 중..." />
+  }
+
+  if (!ready) {
+    return (
+      <StateCard
+        fullScreen
+        icon="cloud-offline-outline"
+        title="Bank 정보를 불러오지 못했어요."
+        description="네트워크 연결을 확인하고 다시 시도해 주세요."
+        actionLabel="다시 시도"
+        onAction={retryBankData}
+      />
+    )
   }
 
   return (
@@ -128,7 +144,13 @@ export default function BankScreen() {
             </View>
 
             <View style={styles.productList}>
-              {items.map((item) => {
+              {items.length === 0 ? (
+                <StateCard
+                  icon="card-outline"
+                  title="현재 구매 가능한 상품이 없어요."
+                  description="상품 준비가 끝나면 이곳에 표시됩니다."
+                />
+              ) : items.map((item) => {
                 const productId = item.google_play_product_id
                 const storeProduct = productId ? storeProducts.get(productId) : undefined
                 const isProcessing = processingProductId === productId
@@ -183,11 +205,11 @@ export default function BankScreen() {
             </View>
 
             {purchases.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Ionicons name="receipt-outline" size={24} color="#94A3B8" />
-                <Text style={styles.emptyTitle}>아직 충전 내역이 없어요</Text>
-                <Text style={styles.emptyDescription}>첫 CASH 충전 기록이 여기에 표시됩니다.</Text>
-              </View>
+              <StateCard
+                icon="receipt-outline"
+                title="아직 충전 내역이 없어요."
+                description="첫 CASH 충전 기록이 여기에 표시됩니다."
+              />
             ) : (
               <View style={styles.historyCard}>
                 {purchases.map((purchase, index) => {
@@ -240,7 +262,6 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 34 },
   content: { width: '100%', maxWidth: 640, alignSelf: 'center', gap: 22 },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F7FB' },
   mockBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: '#FFEDD5' },
   mockBadgeText: { color: '#9A3412', fontSize: 11, fontWeight: '800' },
   feedback: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 16, backgroundColor: '#EFF6FF' },
@@ -272,9 +293,6 @@ const styles = StyleSheet.create({
   purchaseButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   historyRefresh: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, borderRadius: 12, backgroundColor: '#EFF6FF' },
   historyRefreshText: { color: '#2563EB', fontSize: 11, fontWeight: '700' },
-  emptyCard: { padding: 24, borderRadius: 20, alignItems: 'center', backgroundColor: '#FFFFFF' },
-  emptyTitle: { color: '#334155', fontSize: 14, fontWeight: '700', marginTop: 9 },
-  emptyDescription: { color: '#94A3B8', fontSize: 12, marginTop: 4 },
   historyCard: { paddingHorizontal: 17, borderRadius: 20, backgroundColor: '#FFFFFF' },
   historyRow: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 11 },
   historyRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2E8F0' },

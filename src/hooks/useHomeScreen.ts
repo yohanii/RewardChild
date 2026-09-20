@@ -4,7 +4,7 @@ import type { Enums } from '@/src/types/database.types'
 import { showAlert } from '@/src/utils/alert'
 import { classifyRelations } from '@/src/utils/relationState'
 import { router, useFocusEffect } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 type HomeRole = Exclude<Enums<'user_role'>, 'DEFAULT'>
 
@@ -35,12 +35,21 @@ export function useHomeScreen() {
   const [connection, setConnection] = useState<HomeConnection | null>(null)
   const [actionableQuestCount, setActionableQuestCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const hasLoadedRef = useRef(false)
+  const loadInFlightRef = useRef<Promise<void> | null>(null)
 
-  useFocusEffect(
-    useCallback(() => {
-      let active = true
+  const load = useCallback((mode: 'focus' | 'refresh' | 'retry' = 'focus') => {
+    if (loadInFlightRef.current) {
+      if (mode === 'refresh') setRefreshing(true)
+      return loadInFlightRef.current
+    }
+    if (!hasLoadedRef.current) setLoading(true)
+    if (mode === 'refresh') setRefreshing(true)
+    setError(null)
 
-      const load = async () => {
+    const request = (async () => {
         const {
           data: { user },
           error: authError,
@@ -58,9 +67,7 @@ export function useHomeScreen() {
           .maybeSingle()
 
         if (profileError || !profileRow) {
-          console.warn('home profile load error', profileError?.message)
-          router.replace('/login')
-          return
+          throw profileError ?? new Error('PROFILE_NOT_FOUND')
         }
 
         if (!profileRow.nickname) {
@@ -112,15 +119,9 @@ export function useHomeScreen() {
             .in('status', actionableStatuses),
         ])
 
-        if (balanceResult.error) {
-          console.warn('home balance load error', balanceResult.error.message)
-        }
-        if (relationResult.error) {
-          console.warn('home relation load error', relationResult.error.message)
-        }
-        if (questResult.error) {
-          console.warn('home quest count load error', questResult.error.message)
-        }
+        if (balanceResult.error) throw balanceResult.error
+        if (relationResult.error) throw relationResult.error
+        if (questResult.error) throw questResult.error
 
         const balanceRows = balanceResult.data ?? []
         const attendance =
@@ -152,29 +153,41 @@ export function useHomeScreen() {
           }
         }
 
-        if (!active) return
-
         setProfile(nextProfile)
         setBalance({ attendance, cash, total: attendance + cash })
         setConnection(nextConnection)
         setActionableQuestCount(questResult.count ?? 0)
-        setLoading(false)
+        hasLoadedRef.current = true
 
         if (attendanceGranted > 0) {
           showAlert('출석 완료', `ATTENDANCE ${attendanceGranted}개를 충전했어요.`)
         }
-      }
-
-      load().catch((error) => {
-        console.warn('home load error', error)
-        if (active) setLoading(false)
+      })().catch((loadError) => {
+        console.warn('home load error', loadError)
+        setError('홈 정보를 불러오지 못했어요.')
+      }).finally(() => {
+        setLoading(false)
+        setRefreshing(false)
+        loadInFlightRef.current = null
       })
 
-      return () => {
-        active = false
-      }
-    }, []),
-  )
+    loadInFlightRef.current = request
+    return request
+  }, [])
 
-  return { profile, balance, connection, actionableQuestCount, loading }
+  useFocusEffect(useCallback(() => {
+    void load('focus')
+  }, [load]))
+
+  return {
+    profile,
+    balance,
+    connection,
+    actionableQuestCount,
+    loading,
+    refreshing,
+    error,
+    refresh: () => load('refresh'),
+    retry: () => load('retry'),
+  }
 }

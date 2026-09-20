@@ -1,13 +1,14 @@
+import { ScreenLoading, StateCard } from '@/src/components/common/ScreenState'
 import { useSettingsScreen } from '@/src/hooks/useSettingsScreen'
 import { confirmAsync } from '@/src/utils/confirmAsync'
 import { showAlert } from '@/src/utils/alert'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function SettingsScreen() {
-  const { profile, relations, loading, blockingRelationId, blockRelation } = useSettingsScreen()
+  const { profile, relations, loading, refreshing, error, blockingRelationId, blockRelation, refresh, retry } = useSettingsScreen()
 
   const handleBlock = async (relationId: number, name: string) => {
     const confirmed = await confirmAsync(
@@ -22,9 +23,20 @@ export default function SettingsScreen() {
   }
 
   if (loading && !profile) {
-    return <View style={styles.loadingContainer}><ActivityIndicator color="#2563EB" /></View>
+    return <ScreenLoading label="설정 정보를 불러오는 중..." />
   }
-  if (!profile) return null
+  if (!profile) {
+    return (
+      <StateCard
+        fullScreen
+        icon="cloud-offline-outline"
+        title={error ?? '설정 정보를 표시할 수 없어요.'}
+        description="네트워크 연결을 확인하고 다시 시도해 주세요."
+        actionLabel="다시 시도"
+        onAction={retry}
+      />
+    )
+  }
 
   const isParent = profile.role === 'PARENT'
   const relationCountCopy = relations.length === 0
@@ -35,8 +47,21 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#2563EB" colors={['#2563EB']} />}
+      >
         <View style={styles.content}>
+          {error ? (
+            <StateCard
+              icon="cloud-offline-outline"
+              title={error}
+              description="기존 정보는 유지했어요. 다시 조회해 주세요."
+              actionLabel="다시 시도"
+              onAction={retry}
+            />
+          ) : null}
           <View style={styles.header}>
             <Pressable style={styles.iconButton} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="뒤로 가기">
               <Ionicons name="chevron-back" size={24} color="#1E293B" />
@@ -133,7 +158,6 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F6F7FB' },
   scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 36 },
   content: { width: '100%', maxWidth: 640, alignSelf: 'center', gap: 22 },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F7FB' },
   header: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconButton: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
   title: { color: '#0F172A', fontSize: 20, fontWeight: '800' },

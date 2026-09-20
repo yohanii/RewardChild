@@ -1,18 +1,30 @@
 import { BalanceCard } from '@/src/components/common/BalanceCard'
+import { ScreenLoading, StateCard } from '@/src/components/common/ScreenState'
 import { useHomeScreen } from '@/src/hooks/useHomeScreen'
 import { Ionicons } from '@expo/vector-icons'
 import { router, type Href } from 'expo-router'
 import React from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function HomeScreen() {
-  const { profile, balance, connection, actionableQuestCount, loading } = useHomeScreen()
+  const { profile, balance, connection, actionableQuestCount, loading, refreshing, error, refresh, retry } = useHomeScreen()
 
   if (loading && !profile) {
-    return <View style={styles.loadingContainer}><ActivityIndicator color="#2563EB" /></View>
+    return <ScreenLoading label="홈 정보를 불러오는 중..." />
   }
-  if (!profile) return null
+  if (!profile) {
+    return (
+      <StateCard
+        fullScreen
+        icon="cloud-offline-outline"
+        title={error ?? '홈 정보를 표시할 수 없어요.'}
+        description="네트워크 연결을 확인하고 다시 시도해 주세요."
+        actionLabel="다시 시도"
+        onAction={retry}
+      />
+    )
+  }
 
   const isParent = profile.role === 'PARENT'
   const taskCopy = isParent
@@ -25,8 +37,22 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#2563EB" colors={['#2563EB']} />}
+      >
         <View style={styles.content}>
+          {error ? (
+            <StateCard
+              icon="cloud-offline-outline"
+              title={error}
+              description="기존 정보는 유지했어요. 다시 조회해 주세요."
+              actionLabel="다시 시도"
+              onAction={retry}
+            />
+          ) : null}
           <View style={styles.greetingRow}>
             <View style={styles.greetingCopy}>
               <Text style={styles.eyebrow}>오늘도 반가워요</Text>
@@ -105,7 +131,6 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32 },
   content: { width: '100%', maxWidth: 640, alignSelf: 'center', gap: 22 },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F7FB' },
   greetingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   greetingCopy: { flex: 1 },
   eyebrow: { color: '#64748B', fontSize: 13, fontWeight: '600', marginBottom: 4 },

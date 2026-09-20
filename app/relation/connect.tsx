@@ -1,8 +1,9 @@
+import { ScreenLoading, StateCard } from '@/src/components/common/ScreenState'
 import { useOnRelationActivated } from '@/src/hooks/useOnRelationActivated'
 import { showAlert } from '@/src/utils/alert'
 import { classifyRelations } from '@/src/utils/relationState'
 import { router } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native'
 import { supabase } from '../../src/services/supabaseClient'
 import type { Enums } from '../../src/types/database.types'
@@ -20,6 +21,8 @@ export default function RelationConnectScreen() {
   const [waitingRelationId, setWaitingRelationId] = useState<number | null>(null)
   const [hasMultiplePendingRelations, setHasMultiplePendingRelations] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // ✅ 1. relation이 ACTIVE 되면 자동 이동
   useOnRelationActivated(profile?.id ?? 0, profile?.role ?? 'PARENT', () => {
@@ -27,18 +30,20 @@ export default function RelationConnectScreen() {
   }, { relationId: waitingRelationId ?? undefined })
 
   // ✅ 2. 내 프로필 불러오기
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.replace('/login')
+  const loadProfile = useCallback(async () => {
+    setInitialLoading(true)
+    setError(null)
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) return router.replace('/login')
 
-      const { data } = await supabase
+      const { data, error: profileError } = await supabase
         .from('users')
         .select('id, role, nickname, tag')
         .eq('auth_user_id', user.id)
         .single()
 
-      if (!data) return
+      if (profileError || !data) throw profileError ?? new Error('PROFILE_NOT_FOUND')
       if (!data.nickname || !data.tag) {
         router.replace('/onboarding/nickname')
         return
@@ -54,8 +59,17 @@ export default function RelationConnectScreen() {
         nickname: data.nickname,
         tag: data.tag,
       })
-    })()
+    } catch (loadError) {
+      console.warn('relation connect profile load error', loadError)
+      setError('연결 정보를 불러오지 못했어요.')
+    } finally {
+      setInitialLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    void loadProfile()
+  }, [loadProfile])
 
   // ✅ 3. 부모가 이전 요청(PENDING) 보낸 적 있는지 확인
   useEffect(() => {
@@ -69,7 +83,8 @@ export default function RelationConnectScreen() {
         .in('status', ['PENDING', 'ACTIVE'])
 
       if (error) {
-        console.error(error)
+        console.warn('relation state load error', error)
+        setError('연결 상태를 불러오지 못했어요.')
         return
       }
 
@@ -135,7 +150,7 @@ export default function RelationConnectScreen() {
     })
 
     setLoading(false)
-    if (error || !inserted) return showAlert('연결 실패', error?.message ?? '연결 요청 결과가 없습니다.')
+    if (error || !inserted) return showAlert('연결 실패', '잠시 후 다시 시도해 주세요.')
 
     setWaitingRelationId(inserted.id)
     showAlert('연결 요청 완료', '자녀의 승인을 기다려주세요.')
@@ -150,18 +165,39 @@ export default function RelationConnectScreen() {
     })
     setLoading(false)
 
-    if (error) return showAlert('요청 취소 실패', error.message)
+    if (error) return showAlert('요청 취소 실패', '잠시 후 다시 시도해 주세요.')
     setWaitingRelationId(null)
     setHasMultiplePendingRelations(false)
     showAlert('연결 요청을 취소했습니다.')
   }
 
-  if (!profile) return null
+  if (initialLoading && !profile) return <ScreenLoading label="연결 정보를 불러오는 중..." />
+  if (!profile) {
+    return (
+      <StateCard
+        fullScreen
+        icon="cloud-offline-outline"
+        title={error ?? '연결 정보를 표시할 수 없어요.'}
+        description="네트워크 연결을 확인하고 다시 시도해 주세요."
+        actionLabel="다시 시도"
+        onAction={loadProfile}
+      />
+    )
+  }
 
   const isParent = profile.role === 'PARENT'
 
   return (
     <View style={styles.container}>
+      {error ? (
+        <StateCard
+          icon="cloud-offline-outline"
+          title={error}
+          description="다시 조회한 뒤 연결을 진행해 주세요."
+          actionLabel="다시 시도"
+          onAction={loadProfile}
+        />
+      ) : null}
       <Text style={styles.myTag}>
         내 코드: {profile.nickname}#{profile.tag}
       </Text>
@@ -176,7 +212,7 @@ export default function RelationConnectScreen() {
             style={styles.input}
             autoCapitalize="none"
           />
-          <Button title={loading ? '요청 중...' : '연결 요청'} onPress={handleConnect} disabled={loading} />
+          <Button title={loading ? '요청 중...' : '연결 요청'} onPress={handleConnect} disabled={loading || Boolean(error)} />
 
           {waitingRelationId && !loading && (
             <View style={styles.waitingArea}>

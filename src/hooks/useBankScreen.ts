@@ -97,7 +97,6 @@ export function useBankScreen() {
       authUserId: user.id,
       role: profileRow.role,
     }
-    setProfile(nextProfile)
 
     const [balanceResult, itemResult, purchaseResult] = await Promise.all([
       supabase
@@ -123,6 +122,7 @@ export function useBankScreen() {
     if (purchaseResult.error) throw purchaseResult.error
 
     const balanceRows = balanceResult.data ?? []
+    setProfile(nextProfile)
     setBalance({
       attendance: balanceRows.find((row) => row.type === 'ATTENDANCE')?.amount ?? 0,
       cash: balanceRows.find((row) => row.type === 'CASH')?.amount ?? 0,
@@ -135,6 +135,7 @@ export function useBankScreen() {
 
   const refreshBankData = useCallback(async () => {
     setRefreshing(true)
+    setFeedback(null)
     try {
       await loadBankData()
     } catch {
@@ -193,6 +194,19 @@ export function useBankScreen() {
     }
   }, [handlePurchaseError, recoverWithProvider])
 
+  const retryBankData = useCallback(async () => {
+    setLoading(true)
+    setFeedback(null)
+    try {
+      await loadBankData()
+      await recoverPurchases()
+    } catch {
+      setFeedback({ tone: 'error', message: 'Bank 정보를 불러오지 못했어요.' })
+    } finally {
+      setLoading(false)
+    }
+  }, [loadBankData, recoverPurchases])
+
   useFocusEffect(
     useCallback(() => {
       let active = true
@@ -244,6 +258,7 @@ export function useBankScreen() {
   }, [reconnectProvider])
 
   return {
+    ready: profile !== null,
     balance,
     billingMode,
     connected,
@@ -257,6 +272,7 @@ export function useBankScreen() {
     purchaseProduct,
     reconnectBilling,
     recoverPurchases,
+    retryBankData,
     refreshBankData,
   }
 }
