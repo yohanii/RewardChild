@@ -14,8 +14,11 @@ import { colors, layout, radius, shadows, spacing, typography } from '@/src/them
 import type { Quest } from '@/src/types/quest'
 import { Ionicons } from '@expo/vector-icons'
 import React, { useState } from 'react'
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+const QUEST_BOARD_IMAGE = require('../../../assets/ui/decorations/quest_board.png')
+const QUEST_SCROLL_IMAGE = require('../../../assets/ui/decorations/quest_scroll.png')
 
 export default function QuestsScreen() {
   const {
@@ -45,7 +48,6 @@ export default function QuestsScreen() {
 
   const isParent = profile.role === 'PARENT'
   const roleAccent = isParent ? colors.parent : colors.child
-  const roleSoft = isParent ? colors.parentSoft : colors.childSoft
   const renderQuest = (quest: Quest) => (
     <QuestCard
       key={quest.id}
@@ -78,23 +80,25 @@ export default function QuestsScreen() {
       >
         <View style={styles.content}>
           <View style={styles.hero}>
-            <View style={styles.heroGlow} accessibilityElementsHidden>
-              <Ionicons name="flame-outline" size={52} color={colors.accentGold} />
-            </View>
             <View style={styles.heroTopRow}>
               <StatusChip label={isParent ? '길드 상인의 게시판' : '리트리버 용사의 게시판'} tone={isParent ? 'parent' : 'child'} />
               <CoinBadge amount={balance} compact />
             </View>
             <View style={styles.heroTitleRow}>
-              <View style={[styles.heroEmblem, { backgroundColor: roleSoft }]}>
-                <Ionicons name={isParent ? 'create-outline' : 'shield-half-outline'} size={27} color={roleAccent} />
-              </View>
               <View style={styles.heroCopy}>
                 <Text style={styles.heroEyebrow}>용병술집 · 의뢰 게시판</Text>
                 <Text style={styles.heroTitle}>오늘의 의뢰</Text>
                 <Text style={styles.heroDescription}>
                   {isParent ? '오늘의 의뢰를 등록하고 완료 보고를 관리해 보세요.' : '오늘은 어떤 의뢰에 도전할까요? 모험을 골라보세요.'}
                 </Text>
+              </View>
+              <View style={styles.heroBoardStage}>
+                <Image
+                  source={QUEST_BOARD_IMAGE}
+                  style={styles.heroBoardImage}
+                  resizeMode="contain"
+                  accessibilityLabel="길드 의뢰가 붙어 있는 중세 게시판"
+                />
               </View>
             </View>
             {isParent && !hasMultipleActiveRelations ? (
@@ -178,7 +182,12 @@ export default function QuestsScreen() {
                       accessibilityState={{ expanded: showCompleted }}
                     >
                       <View style={styles.completedToggleIcon}>
-                        <Ionicons name="archive-outline" size={21} color={colors.success} />
+                        <Image
+                          source={QUEST_SCROLL_IMAGE}
+                          style={styles.completedScrollImage}
+                          resizeMode="contain"
+                          accessibilityElementsHidden
+                        />
                       </View>
                       <View style={styles.completedToggleCopy}>
                         <Text style={styles.completedToggleTitle}>완료된 의뢰 {completedQuests.length}건</Text>
@@ -226,7 +235,7 @@ const styles = StyleSheet.create({
   },
   content: { width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', gap: spacing.xl },
   hero: {
-    padding: spacing.lg,
+    padding: spacing.md,
     borderRadius: radius['2xl'],
     borderWidth: 1,
     borderColor: colors.accentGold,
@@ -234,23 +243,21 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.raised,
   },
-  heroGlow: { position: 'absolute', right: -8, bottom: -5, opacity: 0.18 },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  heroTitleRow: { marginTop: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  heroEmblem: {
-    width: 52,
-    height: 60,
-    borderRadius: radius.lg,
+  heroTitleRow: {
+    height: 148,
+    marginTop: spacing.xs,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.accentGold,
+    gap: spacing.sm,
   },
-  heroCopy: { flex: 1 },
+  heroCopy: { flex: 1, minWidth: 0, justifyContent: 'center' },
   heroEyebrow: { ...typography.caption, color: colors.accentGold, fontWeight: '800' },
   heroTitle: { ...typography.screenTitle, marginTop: 1, color: colors.onPrimary },
   heroDescription: { ...typography.body, marginTop: spacing.xxs, color: colors.onPrimary, opacity: 0.86 },
-  createButton: { marginTop: spacing.lg, backgroundColor: colors.parent },
+  heroBoardStage: { width: '44%', height: 148, flexShrink: 0, alignItems: 'center', justifyContent: 'center' },
+  heroBoardImage: { width: '100%', height: '100%' },
+  createButton: { marginTop: spacing.sm, backgroundColor: colors.parent },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   loadingInline: { paddingVertical: spacing['2xl'] },
   section: { gap: spacing.sm },
@@ -293,7 +300,8 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   pressed: { opacity: 0.8 },
-  completedToggleIcon: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.successSoft },
+  completedToggleIcon: { width: 52, height: 48, alignItems: 'center', justifyContent: 'center' },
+  completedScrollImage: { width: 48, height: 44 },
   completedToggleCopy: { flex: 1 },
   completedToggleTitle: { ...typography.cardTitle, color: colors.textPrimary },
   completedToggleDescription: { ...typography.caption, marginTop: 2, color: colors.textSecondary },
