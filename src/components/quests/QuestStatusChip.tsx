@@ -2,6 +2,7 @@
 import React from 'react'
 import { StyleSheet, Text, View, ViewStyle, TextStyle } from 'react-native'
 import type { Quest, QuestStatus } from '@/src/types/quest'
+import { getQuestStatusLabel } from '@/src/utils/questDisplay'
 
 type Props = {
   status: Quest['status']
@@ -13,31 +14,31 @@ const getStatusStyle = (status: QuestStatus | null) => {
   switch (status) {
     case 'REGISTERED':
       return {
-        label: '등록됨',
+        label: getQuestStatusLabel(status),
         container: styles.statusRegistered,
         text: styles.statusRegisteredText,
       }
     case 'REQUESTED':
       return {
-        label: '승인 대기',
+        label: getQuestStatusLabel(status),
         container: styles.statusRequested,
         text: styles.statusRequestedText,
       }
     case 'COMPLETED':
       return {
-        label: '완료',
+        label: getQuestStatusLabel(status),
         container: styles.statusCompleted,
         text: styles.statusCompletedText,
       }
     case 'REJECTED':
       return {
-        label: '반려됨',
+        label: getQuestStatusLabel(status),
         container: styles.statusRejected,
         text: styles.statusRejectedText,
       }
     default:
       return {
-        label: '상태 없음',
+        label: getQuestStatusLabel(status),
         container: styles.statusRegistered,
         text: styles.statusRegisteredText,
       }

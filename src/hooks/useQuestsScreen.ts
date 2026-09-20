@@ -5,17 +5,12 @@ import { showAlert } from '@/src/utils/alert'
 import { confirmAsync } from '@/src/utils/confirmAsync'
 import { classifyRelations } from '@/src/utils/relationState'
 import { router, useFocusEffect } from 'expo-router'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 
 export type CreateQuestPayload = {
   title: string
   content?: string
   reward: number
-}
-
-const getDDayLabel = (quest: Quest) => {
-  // 실제로 due_date가 생기면 여기서 계산
-  return 'D-1'
 }
 
 export const useQuestsScreen = () => {
@@ -32,6 +27,35 @@ export const useQuestsScreen = () => {
 
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null)
   const [modalVisible, setModalVisible] = useState(false)
+
+  const { activeQuests, completedQuests } = useMemo(() => {
+    const isParent = profile?.role === 'PARENT'
+    const priority = isParent
+      ? { REQUESTED: 0, REGISTERED: 1, REJECTED: 2 }
+      : { REJECTED: 0, REGISTERED: 1, REQUESTED: 2 }
+    const byNewest = (a: Quest, b: Quest) => {
+      const aTime = Date.parse(a.created_at ?? '') || 0
+      const bTime = Date.parse(b.created_at ?? '') || 0
+      return bTime - aTime || b.id - a.id
+    }
+
+    const active = quests
+      .filter((quest) => quest.status !== 'COMPLETED')
+      .sort((a, b) => {
+        const aPriority = a.status ? priority[a.status as keyof typeof priority] ?? 99 : 99
+        const bPriority = b.status ? priority[b.status as keyof typeof priority] ?? 99 : 99
+        return aPriority - bPriority || byNewest(a, b)
+      })
+    const completed = quests
+      .filter((quest) => quest.status === 'COMPLETED')
+      .sort((a, b) => {
+        const aTime = Date.parse(a.completed_at ?? a.created_at ?? '') || 0
+        const bTime = Date.parse(b.completed_at ?? b.created_at ?? '') || 0
+        return bTime - aTime || b.id - a.id
+      })
+
+    return { activeQuests: active, completedQuests: completed }
+  }, [profile?.role, quests])
 
   const load = useCallback((mode: 'focus' | 'refresh' | 'retry' = 'focus') => {
     if (loadInFlightRef.current) {
@@ -364,6 +388,8 @@ export const useQuestsScreen = () => {
     profile,
     balance,
     quests,
+    activeQuests,
+    completedQuests,
     loading,
     refreshing,
     error,
@@ -377,7 +403,6 @@ export const useQuestsScreen = () => {
     childRequestQuest,
     parentApproveQuest,
     parentRejectQuest,
-    getDDayLabel,
     createQuest,
     refresh: () => load('refresh'),
     retry: () => load('retry'),

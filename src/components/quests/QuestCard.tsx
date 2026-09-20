@@ -1,5 +1,6 @@
 // src/components/quests/QuestCard.tsx
 import type { Quest, UserRole } from '@/src/types/quest'
+import { getQuestDateLabel, getQuestStatusDescription } from '@/src/utils/questDisplay'
 import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { QuestStatusChip } from './QuestStatusChip'
@@ -13,7 +14,6 @@ type Props = {
   onApprove?: () => void
   onReject?: () => void
   onRequest?: () => void
-  ddayLabel: string
 }
 
 export const QuestCard: React.FC<Props> = ({
@@ -25,7 +25,6 @@ export const QuestCard: React.FC<Props> = ({
   onApprove,
   onReject,
   onRequest,
-  ddayLabel,
 }) => {
   const isParent = role === 'PARENT'
   const isChild = role === 'CHILD'
@@ -44,10 +43,10 @@ export const QuestCard: React.FC<Props> = ({
           <Text style={styles.rewardLabel}>보상</Text>
           <Text style={styles.rewardValue}>{quest.reward.toLocaleString()} COIN</Text>
         </View>
-        <View style={styles.ddayBox}>
-          <Text style={styles.ddayText}>{ddayLabel}</Text>
-        </View>
+        <Text style={styles.dateText}>{getQuestDateLabel(quest)}</Text>
       </View>
+
+      <Text style={styles.statusDescription}>{getQuestStatusDescription(quest.status, role)}</Text>
 
       {/* 역할별 버튼 */}
       <View style={styles.actionsRow}>
@@ -145,17 +144,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 2,
   },
-  ddayBox: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    backgroundColor: '#F1F5F9',
-  },
-  ddayText: {
-    color: '#475569',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  dateText: { color: '#64748B', fontSize: 11, fontWeight: '600' },
+  statusDescription: { color: '#64748B', fontSize: 12, lineHeight: 18, marginTop: 2 },
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

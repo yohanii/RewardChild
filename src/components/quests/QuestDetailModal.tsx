@@ -2,6 +2,7 @@
 import React from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import type { Quest, UserRole } from '@/src/types/quest'
+import { getQuestDateLabel, getQuestStatusDescription } from '@/src/utils/questDisplay'
 import { QuestStatusChip } from './QuestStatusChip'
 
 type Props = {
@@ -9,7 +10,6 @@ type Props = {
   quest: Quest | null
   role: UserRole
   mutating?: boolean
-  ddayLabel: string
   onClose: () => void
   onDelete?: () => void
   onApprove?: () => void
@@ -22,7 +22,6 @@ export const QuestDetailModal: React.FC<Props> = ({
   quest,
   role,
   mutating,
-  ddayLabel,
   onClose,
   onDelete,
   onApprove,
@@ -51,10 +50,10 @@ export const QuestDetailModal: React.FC<Props> = ({
               <Text style={styles.rewardLabel}>보상</Text>
               <Text style={styles.rewardValue}>{quest.reward.toLocaleString()} COIN</Text>
             </View>
-            <View style={styles.ddayBox}>
-              <Text style={styles.ddayText}>{ddayLabel}</Text>
-            </View>
+            <Text style={styles.dateText}>{getQuestDateLabel(quest)}</Text>
           </View>
+
+          <Text style={styles.statusDescription}>{getQuestStatusDescription(quest.status, role)}</Text>
 
           <ScrollView style={styles.body}>
             <Text style={styles.sectionTitle}>퀘스트 내용</Text>
@@ -164,18 +163,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 2,
   },
-  ddayBox: {
-    marginLeft: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    backgroundColor: '#F1F5F9',
-  },
-  ddayText: {
-    color: '#475569',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  dateText: { marginLeft: 8, color: '#64748B', fontSize: 11, fontWeight: '600' },
+  statusDescription: { color: '#64748B', fontSize: 12, lineHeight: 18, marginBottom: 10 },
   body: {
     marginTop: 4,
     marginBottom: 12,
