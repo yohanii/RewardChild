@@ -14,8 +14,11 @@ import { colors, layout, radius, shadows, spacing, typography } from '@/src/them
 import { Ionicons } from '@expo/vector-icons'
 import { router, type Href } from 'expo-router'
 import React from 'react'
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+const CHILD_HERO_IMAGE = require('../../../assets/ui/characters/child_hero.png')
+const PARENT_HERO_IMAGE = require('../../../assets/ui/characters/parent_merchant.png')
 
 type LocationCardProps = {
   icon: FantasyIconName
@@ -78,6 +81,7 @@ export default function HomeScreen() {
   }
 
   const isParent = profile.role === 'PARENT'
+  const heroCharacter = isParent ? PARENT_HERO_IMAGE : CHILD_HERO_IMAGE
   const roleAccent = isParent ? colors.parent : colors.child
   const roleSoft = isParent ? colors.parentSoft : colors.childSoft
   const roleTitle = isParent ? '길드 상인 · 부모' : '리트리버 용사 · 자녀'
@@ -137,17 +141,24 @@ export default function HomeScreen() {
             <View style={styles.heroIdentityRow}>
               <View style={styles.heroCopy}>
                 <Text style={styles.heroEyebrow}>모험가 길드에 오신 걸 환영해요</Text>
-                <Text style={styles.heroTitle} numberOfLines={2}>{profile.nickname}님</Text>
+                <Text
+                  style={styles.heroTitle}
+                  numberOfLines={2}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.78}
+                >
+                  {profile.nickname}님
+                </Text>
                 <Text style={styles.heroDescription}>{heroCopy}</Text>
               </View>
-              <View style={styles.heroEmblem} accessibilityElementsHidden>
-                <View style={styles.heroEmblemInner}>
-                  <Ionicons
-                    name={isParent ? 'storefront-outline' : 'shield-half-outline'}
-                    size={38}
-                    color={colors.accentGold}
-                  />
-                </View>
+              <View style={styles.heroCharacterStage}>
+                <View style={styles.heroCharacterHalo} accessibilityElementsHidden />
+                <Image
+                  source={heroCharacter}
+                  style={styles.heroCharacter}
+                  resizeMode="contain"
+                  accessibilityLabel={isParent ? '길드를 관리하는 검은 고양이 상인' : '모험을 준비하는 리트리버 용사'}
+                />
               </View>
             </View>
 
@@ -284,7 +295,7 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
   },
   hero: {
-    padding: spacing.lg,
+    padding: spacing.md,
     borderRadius: radius['2xl'],
     borderWidth: 1,
     borderColor: colors.accentGold,
@@ -303,33 +314,40 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 253, 247, 0.45)',
   },
   pressed: { opacity: 0.78 },
-  heroIdentityRow: { marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  heroCopy: { flex: 1 },
+  heroIdentityRow: {
+    height: 156,
+    marginTop: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  heroCopy: { flex: 1, minWidth: 0, justifyContent: 'center' },
   heroEyebrow: { ...typography.caption, color: colors.onPrimary, opacity: 0.82 },
   heroTitle: { ...typography.screenTitle, marginTop: spacing.xxs, color: colors.onPrimary },
   heroDescription: { ...typography.body, marginTop: spacing.xs, color: colors.onPrimary, opacity: 0.9 },
-  heroEmblem: {
-    width: 86,
-    height: 98,
-    borderRadius: 43,
+  heroCharacterStage: {
+    width: '45%',
+    height: 156,
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 253, 247, 0.13)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 253, 247, 0.35)',
+    position: 'relative',
   },
-  heroEmblemInner: {
-    width: 62,
-    height: 72,
-    borderRadius: 31,
-    alignItems: 'center',
-    justifyContent: 'center',
+  heroCharacterHalo: {
+    position: 'absolute',
+    right: 4,
+    bottom: spacing.sm,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    backgroundColor: 'rgba(255, 238, 184, 0.15)',
     borderWidth: 1,
-    borderColor: colors.accentGold,
+    borderColor: 'rgba(255, 238, 184, 0.32)',
   },
+  heroCharacter: { width: '100%', height: '100%', zIndex: 1 },
   heroBalanceRow: {
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(255, 253, 247, 0.35)',
     flexDirection: 'row',
