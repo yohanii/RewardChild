@@ -1,7 +1,15 @@
-// src/components/shop/ShopItemCard.tsx
-import type { ShopItem } from '@/src/hooks/useShopScreen';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  CoinBadge,
+  ParchmentCard,
+  PrimaryButton,
+  SecondaryButton,
+  StatusChip,
+} from '@/src/components/common/FantasyPrimitives'
+import type { ShopItem } from '@/src/hooks/useShopScreen'
+import { colors, radius, shadows, spacing, typography } from '@/src/theme/tokens'
+import { Ionicons } from '@expo/vector-icons'
+import React from 'react'
+import { StyleSheet, Text, View } from 'react-native'
 
 export function ShopItemCard({
   item,
@@ -21,111 +29,132 @@ export function ShopItemCard({
   onPurchase?: () => void
 }) {
   return (
-    <View style={[styles.card, purchased && styles.cardPurchased]}>
+    <ParchmentCard style={[styles.card, !item.is_active && styles.cardInactive]}>
+      <View style={styles.tagNotch} accessibilityElementsHidden />
       <View style={styles.headerRow}>
-        <Text style={styles.title} numberOfLines={1}>
-          {item.title}
-        </Text>
-        <Text style={styles.price}>{item.price.toLocaleString()} COIN</Text>
-      </View>
-
-      {!!item.content && (
-        <Text style={styles.content} numberOfLines={2}>
-          {item.content}
-        </Text>
-      )}
-
-      <View style={styles.footerRow}>
-        <View style={[styles.badge, item.is_active ? styles.badgeAvailable : styles.badgePurchased]}>
-          <Text style={styles.badgeText}>
-            {isParent ? (item.is_active ? '판매 중' : '비활성') : purchased ? '구매함' : '미구매'}
-          </Text>
+        <View style={styles.emblem}>
+          <Ionicons name="gift-outline" size={24} color={colors.parent} />
         </View>
-        {isParent ? (
-          <View style={styles.actions}>
-            <Pressable style={styles.editButton} onPress={onEdit} disabled={mutating}>
-              <Text style={styles.editButtonText}>수정</Text>
-            </Pressable>
-            {item.is_active ? (
-              <Pressable style={styles.deactivateButton} onPress={onDeactivate} disabled={mutating}>
-                <Text style={styles.deactivateButtonText}>비활성화</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : (
-          <Pressable style={styles.purchaseButton} onPress={onPurchase} disabled={mutating}>
-            <Text style={styles.purchaseButtonText}>{purchased ? '다시 구매' : '구매하기'}</Text>
-          </Pressable>
-        )}
+        <View style={styles.titleCopy}>
+          <Text style={styles.eyebrow}>현실에서 받는 가족 보상</Text>
+          <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+        </View>
       </View>
-    </View>
+
+      <Text style={styles.content} numberOfLines={3}>
+        {item.content?.trim() || '가족이 함께 약속한 특별한 경험과 보상이에요.'}
+      </Text>
+
+      <View style={styles.priceTag}>
+        <View>
+          <Text style={styles.priceLabel}>필요 금화</Text>
+          <Text style={styles.priceHint}>보상을 요청할 때 사용해요</Text>
+        </View>
+        <CoinBadge amount={item.price} compact />
+      </View>
+
+      <View style={styles.statusRow}>
+        <StatusChip
+          label={isParent
+            ? item.is_active ? '판매 중' : '판매 중지'
+            : purchased ? '구매 기록 있음' : '선택 가능'}
+          tone={isParent
+            ? item.is_active ? 'success' : 'neutral'
+            : purchased ? 'info' : 'success'}
+        />
+        {purchased && !isParent ? <Text style={styles.repeatHint}>다시 받을 수도 있어요</Text> : null}
+      </View>
+
+      {isParent ? (
+        <View style={styles.actions}>
+          <SecondaryButton
+            label="보상 수정"
+            onPress={onEdit}
+            disabled={mutating}
+            leading={<Ionicons name="create-outline" size={17} color={colors.primary} />}
+            style={styles.actionButton}
+          />
+          {item.is_active ? (
+            <SecondaryButton
+              label="판매 중지"
+              onPress={onDeactivate}
+              disabled={mutating}
+              style={[styles.actionButton, styles.deactivateButton]}
+              textStyle={styles.deactivateButtonText}
+            />
+          ) : null}
+        </View>
+      ) : (
+        <PrimaryButton
+          label={purchased ? '이 보상 다시 받기' : '이 보상 받기'}
+          onPress={onPurchase}
+          disabled={mutating || !item.is_active}
+          leading={<Ionicons name="bag-handle-outline" size={18} color={colors.onPrimary} />}
+          style={styles.purchaseButton}
+        />
+      )}
+    </ParchmentCard>
   )
 }
 
 const styles = StyleSheet.create({
   card: {
-    padding: 17,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 1,
+    padding: spacing.md,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.md,
+    borderBottomRightRadius: radius.lg,
+    borderBottomLeftRadius: radius.md,
+    backgroundColor: colors.parchment,
+    overflow: 'hidden',
+    ...shadows.card,
   },
-  cardPurchased: {
-    opacity: 0.75,
+  cardInactive: { backgroundColor: colors.surface, opacity: 0.76 },
+  tagNotch: {
+    position: 'absolute',
+    top: -8,
+    right: 22,
+    width: 32,
+    height: 18,
+    borderRadius: radius.pill,
+    backgroundColor: colors.wood,
+    borderWidth: 2,
+    borderColor: colors.accentGold,
   },
-  headerRow: {
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  emblem: {
+    width: 50,
+    height: 50,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.parentSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  titleCopy: { flex: 1 },
+  eyebrow: { ...typography.caption, color: colors.parent, fontSize: 10, lineHeight: 14, fontWeight: '800' },
+  title: { ...typography.cardTitle, marginTop: 2, color: colors.textPrimary },
+  content: { ...typography.body, marginTop: spacing.sm, color: colors.textSecondary },
+  priceTag: {
+    marginTop: spacing.md,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
   },
-  title: {
-    color: '#1E293B',
-    fontSize: 16,
-    fontWeight: '700',
-    flex: 1,
-  },
-  price: {
-    color: '#2563EB',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  content: {
-    color: '#64748B',
-    fontSize: 13,
-    marginTop: 8,
-    lineHeight: 18,
-  },
-  footerRow: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  badge: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-  },
-  badgeAvailable: {
-    backgroundColor: '#EFF6FF',
-  },
-  badgePurchased: {
-    backgroundColor: '#F1F5F9',
-  },
-  badgeText: {
-    color: '#475569',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  actions: { flexDirection: 'row', gap: 8 },
-  editButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#EFF6FF' },
-  editButtonText: { color: '#1D4ED8', fontSize: 12, fontWeight: '700' },
-  deactivateButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FEF2F2' },
-  deactivateButtonText: { color: '#B91C1C', fontSize: 12, fontWeight: '700' },
-  purchaseButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 11, backgroundColor: '#2563EB' },
-  purchaseButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  priceLabel: { ...typography.caption, color: colors.textPrimary, fontWeight: '800' },
+  priceHint: { color: colors.textSecondary, fontSize: 10, lineHeight: 14, marginTop: 1 },
+  statusRow: { marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
+  repeatHint: { ...typography.caption, flex: 1, color: colors.textSecondary, textAlign: 'right' },
+  actions: { marginTop: spacing.md, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  actionButton: { flex: 1, minWidth: 112 },
+  deactivateButton: { borderColor: colors.danger, backgroundColor: colors.dangerSoft },
+  deactivateButtonText: { color: colors.danger },
+  purchaseButton: { marginTop: spacing.md, backgroundColor: colors.child },
 })

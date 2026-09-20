@@ -1,6 +1,22 @@
-// src/components/shop/ShopItemCreateModal.tsx
+import {
+  ParchmentCard,
+  PrimaryButton,
+  SecondaryButton,
+} from '@/src/components/common/FantasyPrimitives'
+import { colors, layout, radius, shadows, spacing, typography } from '@/src/theme/tokens'
+import { Ionicons } from '@expo/vector-icons'
 import React, { useEffect, useState } from 'react'
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 
 export function ShopItemCreateModal({
   visible,
@@ -21,71 +37,114 @@ export function ShopItemCreateModal({
 
   useEffect(() => {
     if (!visible) return
-    // 열릴 때 초기화하고 싶으면 아래 유지
     setTitle(initialItem?.title ?? '')
     setContent(initialItem?.content ?? '')
     setPrice(initialItem ? String(initialItem.price) : '')
   }, [initialItem, visible])
 
   const submit = async () => {
-    const t = title.trim()
-    const c = content.trim()
-    const p = Number(price)
+    const trimmedTitle = title.trim()
+    const trimmedContent = content.trim()
+    const parsedPrice = Number(price)
 
-    if (!t) return
-    if (!Number.isFinite(p) || p <= 0) return
+    if (!trimmedTitle) return
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) return
 
-    await onSubmit({ title: t, content: c, price: p })
+    await onSubmit({ title: trimmedTitle, content: trimmedContent, price: parsedPrice })
   }
 
+  const isEditing = Boolean(initialItem)
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{initialItem ? '아이템 수정' : '아이템 등록'}</Text>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={styles.backdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ParchmentCard style={styles.card}>
+          <View style={styles.receiptTop} accessibilityElementsHidden>
+            <View style={styles.pin} />
+            <Text style={styles.documentLabel}>{isEditing ? 'EDIT REWARD TAG' : 'NEW REWARD TAG'}</Text>
+            <View style={styles.pin} />
+          </View>
 
-          <Text style={styles.label}>제목</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="예) 주말 아이스크림 1개"
-            placeholderTextColor="#94A3B8"
-            value={title}
-            onChangeText={setTitle}
-          />
-
-          <Text style={styles.label}>내용</Text>
-          <TextInput
-            style={[styles.input, styles.multiline]}
-            placeholder="예) 주말에 아이스크림 1개 먹기"
-            placeholderTextColor="#94A3B8"
-            value={content}
-            onChangeText={setContent}
-            multiline
-          />
-
-          <Text style={styles.label}>가격 (COIN)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="예) 10"
-            placeholderTextColor="#94A3B8"
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="number-pad"
-          />
-
-          <View style={styles.actions}>
-            <Pressable style={[styles.button, styles.cancel]} onPress={onClose} disabled={mutating}>
-              <Text style={styles.cancelText}>취소</Text>
-            </Pressable>
-
-            <Pressable style={[styles.button, styles.submit]} onPress={submit} disabled={mutating}>
-              <Text style={styles.submitText}>
-                {mutating ? '저장 중...' : initialItem ? '저장' : '등록'}
-              </Text>
+          <View style={styles.headerRow}>
+            <View style={styles.titleCopy}>
+              <Text style={styles.eyebrow}>검은 고양이의 상점 관리</Text>
+              <Text style={styles.title}>{isEditing ? '보상 정보 수정' : '새 보상 등록'}</Text>
+              <Text style={styles.subtitle}>가족이 현실에서 제공할 경험이나 보상을 적어주세요.</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="보상 등록 닫기"
+              onPress={onClose}
+              hitSlop={spacing.xs}
+              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
+            >
+              <Ionicons name="close" size={22} color={colors.textPrimary} />
             </Pressable>
           </View>
-        </View>
-      </View>
+
+          <ScrollView
+            style={styles.body}
+            contentContainerStyle={styles.bodyContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.field}>
+              <Text style={styles.label}>보상 이름</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="예: 주말에 아이스크림 사주기"
+                placeholderTextColor={colors.disabled}
+                value={title}
+                onChangeText={setTitle}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>실제 제공 내용</Text>
+              <TextInput
+                style={[styles.input, styles.multiline]}
+                placeholder="예: 주말에 함께 아이스크림을 먹으러 가요."
+                placeholderTextColor={colors.disabled}
+                value={content}
+                onChangeText={setContent}
+                multiline
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>필요 금화</Text>
+              <View style={styles.priceInputRow}>
+                <Ionicons name="sparkles" size={19} color={colors.accentGold} />
+                <TextInput
+                  style={styles.priceInput}
+                  placeholder="예: 100"
+                  placeholderTextColor={colors.disabled}
+                  value={price}
+                  onChangeText={setPrice}
+                  keyboardType="number-pad"
+                />
+                <Text style={styles.priceUnit}>COIN</Text>
+              </View>
+              <Text style={styles.helperText}>자녀가 이 보상을 요청할 때 사용할 금화예요.</Text>
+            </View>
+          </ScrollView>
+
+          <View style={styles.actions}>
+            <SecondaryButton label="취소" onPress={onClose} disabled={mutating} style={styles.actionButton} />
+            <PrimaryButton
+              label={mutating ? '저장 중...' : isEditing ? '수정 저장' : '보상 등록'}
+              onPress={submit}
+              disabled={mutating}
+              loading={mutating}
+              leading={<Ionicons name={isEditing ? 'save-outline' : 'pricetag-outline'} size={18} color={colors.onPrimary} />}
+              style={[styles.actionButton, styles.submitButton]}
+            />
+          </View>
+        </ParchmentCard>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }
@@ -93,67 +152,73 @@ export function ShopItemCreateModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.4)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: layout.screenHorizontalPadding,
+    paddingVertical: spacing['2xl'],
   },
   card: {
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    padding: 16,
+    width: '100%',
+    maxWidth: 560,
+    maxHeight: '90%',
+    alignSelf: 'center',
+    padding: spacing.lg,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.xl,
+    borderBottomRightRadius: radius.lg,
+    borderBottomLeftRadius: radius.xl,
+    ...shadows.raised,
   },
-  title: {
-    color: '#0F172A',
-    fontSize: 16,
-    fontWeight: '800',
-    marginBottom: 12,
-  },
-  label: {
-    color: '#64748B',
-    fontSize: 12,
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-    color: '#0F172A',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
-  multiline: {
-    minHeight: 72,
-    textAlignVertical: 'top',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 16,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
+  receiptTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  pin: { width: 9, height: 9, borderRadius: radius.pill, backgroundColor: colors.wood, borderWidth: 2, borderColor: colors.accentGold },
+  documentLabel: { color: colors.textSecondary, fontSize: 9, lineHeight: 12, fontWeight: '800', letterSpacing: 1.3 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  titleCopy: { flex: 1 },
+  eyebrow: { ...typography.caption, color: colors.parent, fontWeight: '800' },
+  title: { ...typography.sectionTitle, marginTop: spacing.xxs, color: colors.textPrimary },
+  subtitle: { ...typography.caption, marginTop: spacing.xxs, color: colors.textSecondary },
+  closeButton: {
+    width: layout.minTouchTarget,
+    height: layout.minTouchTarget,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  cancel: {
-    backgroundColor: '#F1F5F9',
+  pressed: { opacity: 0.72 },
+  body: { marginTop: spacing.md, marginBottom: spacing.sm },
+  bodyContent: { gap: spacing.md, paddingBottom: spacing.xs },
+  field: { gap: spacing.xs },
+  label: { ...typography.caption, color: colors.textPrimary, fontWeight: '800' },
+  input: {
+    minHeight: layout.minTouchTarget,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    ...typography.body,
   },
-  submit: {
-    backgroundColor: '#2563EB',
+  multiline: { minHeight: 100, textAlignVertical: 'top' },
+  priceInputRow: {
+    minHeight: layout.minTouchTarget,
+    paddingHorizontal: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.surface,
   },
-  cancelText: {
-    color: '#475569',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  submitText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
-  },
+  priceInput: { flex: 1, paddingVertical: spacing.xs, color: colors.textPrimary, ...typography.body },
+  priceUnit: { color: colors.onGold, fontSize: 10, lineHeight: 15, fontWeight: '800' },
+  helperText: { ...typography.caption, color: colors.textSecondary },
+  actions: { flexDirection: 'row', gap: spacing.xs },
+  actionButton: { flex: 1 },
+  submitButton: { backgroundColor: colors.parent },
 })

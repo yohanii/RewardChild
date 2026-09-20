@@ -1,13 +1,20 @@
-import { BalanceCard } from '@/src/components/common/BalanceCard'
-import { ScreenHeader } from '@/src/components/common/ScreenHeader'
+import {
+  CoinBadge,
+  FantasyCard,
+  type FantasyIconName,
+  ParchmentCard,
+  PrimaryButton,
+  SecondaryButton,
+  SectionHeader,
+  StatusChip,
+} from '@/src/components/common/FantasyPrimitives'
 import { ScreenLoading, StateCard } from '@/src/components/common/ScreenState'
-import { useBankScreen, type BankFeedback } from '@/src/hooks/useBankScreen'
+import { useBankScreen, type BankFeedback, type BankPurchase } from '@/src/hooks/useBankScreen'
+import { colors, layout, radius, shadows, spacing, type StatusTone, typography } from '@/src/theme/tokens'
 import { Ionicons } from '@expo/vector-icons'
 import React from 'react'
 import {
-  ActivityIndicator,
   Platform,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -19,26 +26,56 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 function FeedbackBanner({ feedback }: { feedback: BankFeedback }) {
   const isSuccess = feedback.tone === 'success'
   const isError = feedback.tone === 'error'
+  const palette = isSuccess
+    ? { color: colors.success, background: colors.successSoft, icon: 'checkmark-circle' as const }
+    : isError
+      ? { color: colors.danger, background: colors.dangerSoft, icon: 'alert-circle' as const }
+      : { color: colors.bank, background: colors.bankSoft, icon: 'information-circle' as const }
+
   return (
-    <View style={[
-      styles.feedback,
-      isSuccess && styles.feedbackSuccess,
-      isError && styles.feedbackError,
-    ]}>
-      <Ionicons
-        name={isSuccess ? 'checkmark-circle' : isError ? 'alert-circle' : 'information-circle'}
-        size={20}
-        color={isSuccess ? '#15803D' : isError ? '#B91C1C' : '#1D4ED8'}
-      />
-      <Text style={[
-        styles.feedbackText,
-        isSuccess && styles.feedbackTextSuccess,
-        isError && styles.feedbackTextError,
-      ]}>
-        {feedback.message}
-      </Text>
-    </View>
+    <FantasyCard style={[styles.feedback, { backgroundColor: palette.background, borderColor: palette.color }]}>
+      <Ionicons name={palette.icon} size={21} color={palette.color} />
+      <Text style={[styles.feedbackText, { color: palette.color }]}>{feedback.message}</Text>
+    </FantasyCard>
   )
+}
+
+function getPurchasePresentation(status: BankPurchase['status']): {
+  label: string
+  description: string
+  tone: StatusTone
+  icon: FantasyIconName
+} {
+  switch (status) {
+    case 'PAID':
+      return {
+        label: '충전 완료',
+        description: '결제 확인과 충전 금화 반영이 완료됐어요.',
+        tone: 'success',
+        icon: 'checkmark-done-outline',
+      }
+    case 'PENDING':
+      return {
+        label: '결제 확인 중',
+        description: '안전하게 확인한 뒤 충전 금화에 반영해요.',
+        tone: 'warning',
+        icon: 'time-outline',
+      }
+    case 'CANCELLED':
+      return {
+        label: '결제 취소',
+        description: '취소되어 금화가 충전되지 않은 기록이에요.',
+        tone: 'neutral',
+        icon: 'close-outline',
+      }
+    case 'REFUNDED':
+      return {
+        label: '환불 완료',
+        description: '환불 처리가 끝난 거래 기록이에요.',
+        tone: 'info',
+        icon: 'return-down-back-outline',
+      }
+  }
 }
 
 export default function BankScreen() {
@@ -62,7 +99,7 @@ export default function BankScreen() {
   } = useBankScreen()
 
   if (loading) {
-    return <ScreenLoading label="Bank 정보를 불러오는 중..." />
+    return <ScreenLoading label="금화 장부를 확인하는 중..." />
   }
 
   if (!ready) {
@@ -70,7 +107,7 @@ export default function BankScreen() {
       <StateCard
         fullScreen
         icon="cloud-offline-outline"
-        title="Bank 정보를 불러오지 못했어요."
+        title="은행 장부를 불러오지 못했어요."
         description="네트워크 연결을 확인하고 다시 시도해 주세요."
         actionLabel="다시 시도"
         onAction={retryBankData}
@@ -78,179 +115,240 @@ export default function BankScreen() {
     )
   }
 
+  const totalBalance = balance.attendance + balance.cash
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        alwaysBounceVertical
         refreshControl={(
-          <RefreshControl refreshing={refreshing} onRefresh={refreshBankData} tintColor="#2563EB" />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshBankData}
+            tintColor={colors.bank}
+            colors={[colors.bank]}
+          />
         )}
       >
         <View style={styles.content}>
-          <ScreenHeader
-            title="Bank"
-            subtitle={billingMode === 'mock'
-              ? '개발용 서버 경로로 CASH 충전 UX를 테스트해요.'
-              : 'Google Play에서 CASH를 안전하게 충전해요.'}
-          />
+          <View style={styles.hero}>
+            <View style={styles.heroMark} accessibilityElementsHidden>
+              <Ionicons name="scale-outline" size={64} color={colors.accentGold} />
+            </View>
+            <View style={styles.heroTopRow}>
+              <StatusChip label="안경 쓴 너구리 은행장" tone="bank" />
+              <CoinBadge amount={totalBalance} compact />
+            </View>
+            <View style={styles.heroTitleRow}>
+              <View style={styles.heroEmblem}>
+                <Ionicons name="library-outline" size={29} color={colors.accentGold} />
+              </View>
+              <View style={styles.heroCopy}>
+                <Text style={styles.heroEyebrow}>금화 보관소 · 정산 장부실</Text>
+                <Text style={styles.heroTitle}>왕실 금화 은행</Text>
+                <Text style={styles.heroDescription}>금화 장부를 확인하고 필요한 만큼 안전하게 충전하세요.</Text>
+              </View>
+            </View>
+            <View style={styles.heroTrustRow}>
+              <View style={styles.heroTrustItem}>
+                <Ionicons name="shield-checkmark-outline" size={17} color={colors.accentGold} />
+                <Text style={styles.heroTrustText}>서버 확인 후 반영</Text>
+              </View>
+              <View style={styles.heroTrustDivider} />
+              <View style={styles.heroTrustItem}>
+                <Ionicons name="book-outline" size={17} color={colors.accentGold} />
+                <Text style={styles.heroTrustText}>정확한 거래 기록</Text>
+              </View>
+            </View>
+          </View>
 
           {billingMode === 'mock' ? (
-            <View style={styles.mockBadge}>
-              <Ionicons name="flask-outline" size={14} color="#9A3412" />
-              <Text style={styles.mockBadgeText}>개발용 Mock 결제</Text>
+            <View style={styles.mockRow}>
+              <StatusChip label="개발 전용 Mock 결제" tone="warning" />
+              <Text style={styles.mockDescription}>실제 결제 없이 서버 충전 흐름을 검증합니다.</Text>
             </View>
           ) : null}
 
-          <BalanceCard
-            label="현재 보유 재화"
-            amount={balance.attendance + balance.cash}
-            caption="구매한 CASH는 서버에서 결제를 확인한 뒤 반영돼요."
-            parts={[
-              { label: '출석 · ATTENDANCE', amount: balance.attendance },
-              { label: '구매 · CASH', amount: balance.cash },
-            ]}
-          />
+          <View style={styles.section}>
+            <SectionHeader title="보유 금화 장부" subtitle="출석 금화와 충전 금화를 구분해 관리해요." />
+            <ParchmentCard style={styles.balanceLedger}>
+              <View style={styles.ledgerTopRow}>
+                <View>
+                  <Text style={styles.ledgerEyebrow}>TOTAL BALANCE</Text>
+                  <Text style={styles.ledgerTitle}>총 보유 금화</Text>
+                </View>
+                <CoinBadge amount={totalBalance} />
+              </View>
+              <View style={styles.balanceRows}>
+                <View style={styles.balanceRow}>
+                  <View style={[styles.balanceIcon, styles.attendanceIcon]}>
+                    <Ionicons name="calendar-outline" size={21} color={colors.primary} />
+                  </View>
+                  <View style={styles.balanceCopy}>
+                    <Text style={styles.balanceTitle}>출석 금화</Text>
+                    <Text style={styles.balanceEnum}>ATTENDANCE</Text>
+                  </View>
+                  <Text style={styles.balanceAmount}>{balance.attendance.toLocaleString()}</Text>
+                </View>
+                <View style={styles.balanceDivider} />
+                <View style={styles.balanceRow}>
+                  <View style={[styles.balanceIcon, styles.cashIcon]}>
+                    <Ionicons name="cash-outline" size={21} color={colors.bank} />
+                  </View>
+                  <View style={styles.balanceCopy}>
+                    <Text style={styles.balanceTitle}>충전 금화</Text>
+                    <Text style={styles.balanceEnum}>CASH</Text>
+                  </View>
+                  <Text style={styles.balanceAmount}>{balance.cash.toLocaleString()}</Text>
+                </View>
+              </View>
+              <Text style={styles.balanceFootnote}>충전 금화는 결제가 안전하게 확인된 뒤 장부에 반영됩니다.</Text>
+            </ParchmentCard>
+          </View>
 
           {feedback ? <FeedbackBanner feedback={feedback} /> : null}
 
           {billingMode === 'google-play' && Platform.OS !== 'android' ? (
-            <View style={styles.noticeCard}>
+            <FantasyCard style={styles.noticeCard}>
               <View style={styles.noticeIcon}>
-                <Ionicons name="logo-google-playstore" size={22} color="#2563EB" />
+                <Ionicons name="logo-google-playstore" size={23} color={colors.bank} />
               </View>
               <View style={styles.noticeCopy}>
-                <Text style={styles.noticeTitle}>Android 전용 기능이에요</Text>
+                <Text style={styles.noticeTitle}>Android 전용 충전 기능</Text>
                 <Text style={styles.noticeDescription}>실제 구매는 Android development build에서 확인할 수 있어요.</Text>
               </View>
-            </View>
+            </FantasyCard>
           ) : billingMode === 'google-play' && !connected ? (
-            <Pressable style={styles.noticeCard} onPress={reconnectBilling}>
-              <View style={styles.noticeIcon}><Ionicons name="refresh" size={22} color="#2563EB" /></View>
-              <View style={styles.noticeCopy}>
-                <Text style={styles.noticeTitle}>Google Play 연결 중</Text>
-                <Text style={styles.noticeDescription}>연결이 오래 걸리면 눌러서 다시 시도해 주세요.</Text>
+            <FantasyCard style={styles.noticeCard}>
+              <View style={styles.noticeIcon}>
+                <Ionicons name="cloud-offline-outline" size={23} color={colors.warning} />
               </View>
-            </Pressable>
+              <View style={styles.noticeCopy}>
+                <Text style={styles.noticeTitle}>결제 서비스 연결 확인 중</Text>
+                <Text style={styles.noticeDescription}>연결이 오래 걸리면 다시 연결해 주세요.</Text>
+              </View>
+              <SecondaryButton
+                label="다시 연결"
+                onPress={reconnectBilling}
+                style={styles.reconnectButton}
+              />
+            </FantasyCard>
           ) : null}
 
           <View style={styles.section}>
-            <View>
-              <Text style={styles.sectionTitle}>CASH 충전</Text>
-              <Text style={styles.sectionSubtitle}>
-                {billingMode === 'mock' ? 'DB의 활성 Bank 상품 설정으로 지급해요.' : '가격은 Google Play 기준으로 표시돼요.'}
-              </Text>
-            </View>
-
+            <SectionHeader
+              title="금화 충전소"
+              subtitle={billingMode === 'mock'
+                ? '활성화된 개발용 환전 상품으로 충전해요.'
+                : 'Google Play에서 제공하는 실제 가격으로 결제해요.'}
+            />
             <View style={styles.productList}>
               {items.length === 0 ? (
                 <StateCard
                   icon="card-outline"
-                  title="현재 구매 가능한 상품이 없어요."
+                  title="현재 이용 가능한 환전 상품이 없어요."
                   description="상품 준비가 끝나면 이곳에 표시됩니다."
                 />
-              ) : items.map((item) => {
+              ) : items.map((item, index) => {
                 const productId = item.google_play_product_id
                 const storeProduct = productId ? storeProducts.get(productId) : undefined
                 const isProcessing = processingProductId === productId
                 const disabled = !connected || !storeProduct || Boolean(processingProductId)
 
                 return (
-                  <View key={item.id} style={styles.productCard}>
-                    <View style={styles.productTopRow}>
-                      <View style={styles.cashIcon}><Ionicons name="sparkles" size={22} color="#D97706" /></View>
-                      <View style={styles.productCopy}>
-                        <Text style={styles.productTitle}>{item.title}</Text>
-                        <Text style={styles.cashAmount}>{item.cash_amount.toLocaleString()} CASH</Text>
+                  <FantasyCard key={item.id} style={styles.productCard}>
+                    <View style={styles.productHeader}>
+                      <View style={styles.productEmblem}>
+                        <Ionicons name={index === 2 ? 'file-tray-stacked-outline' : 'cash-outline'} size={25} color={colors.accentGold} />
                       </View>
-                      <Text style={styles.localizedPrice}>{storeProduct?.displayPrice ?? '가격 확인 중'}</Text>
+                      <View style={styles.productCopy}>
+                        <Text style={styles.productEyebrow}>환전 상품 {index + 1}</Text>
+                        <Text style={styles.productTitle}>{item.title}</Text>
+                      </View>
+                      <StatusChip label={billingMode === 'mock' ? '개발용' : 'Google Play'} tone={billingMode === 'mock' ? 'warning' : 'bank'} />
                     </View>
-
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.purchaseButton,
-                        disabled && styles.purchaseButtonDisabled,
-                        pressed && !disabled && styles.purchaseButtonPressed,
-                      ]}
-                      disabled={disabled}
+                    <View style={styles.exchangeRow}>
+                      <View>
+                        <Text style={styles.exchangeLabel}>지급되는 충전 금화</Text>
+                        <CoinBadge amount={item.cash_amount} unit="CASH" />
+                      </View>
+                      <View style={styles.priceCopy}>
+                        <Text style={styles.priceLabel}>결제 가격</Text>
+                        <Text style={styles.localizedPrice}>{storeProduct?.displayPrice ?? '가격 확인 중'}</Text>
+                      </View>
+                    </View>
+                    <PrimaryButton
+                      label={storeProduct
+                        ? billingMode === 'mock' ? '개발용 충전 실행' : 'Google Play에서 충전'
+                        : '상품 확인 중'}
                       onPress={() => purchaseProduct(item)}
-                    >
-                      {isProcessing ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
-                        <Text style={styles.purchaseButtonText}>
-                          {storeProduct
-                            ? billingMode === 'mock' ? 'Mock으로 구매' : 'Google Play로 구매'
-                            : '상품 확인 중'}
-                        </Text>
-                      )}
-                    </Pressable>
-                  </View>
+                      disabled={disabled}
+                      loading={isProcessing}
+                      leading={<Ionicons name="shield-checkmark-outline" size={18} color={colors.onPrimary} />}
+                      style={styles.purchaseButton}
+                    />
+                  </FantasyCard>
                 )
               })}
             </View>
           </View>
 
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>최근 충전 내역</Text>
-                <Text style={styles.sectionSubtitle}>최근 결제 10건을 확인할 수 있어요.</Text>
-              </View>
-              {connected && billingMode === 'google-play' ? (
-                <Pressable style={styles.historyRefresh} onPress={recoverPurchases}>
-                  <Ionicons name="refresh" size={16} color="#2563EB" />
-                  <Text style={styles.historyRefreshText}>결제 확인</Text>
-                </Pressable>
-              ) : null}
-            </View>
-
+            <SectionHeader
+              title="금화 거래 장부"
+              subtitle="최근 결제 10건의 처리 결과를 기록해요."
+              actionLabel={connected && billingMode === 'google-play' ? '결제 다시 확인' : undefined}
+              onAction={connected && billingMode === 'google-play' ? recoverPurchases : undefined}
+            />
             {purchases.length === 0 ? (
               <StateCard
                 icon="receipt-outline"
-                title="아직 충전 내역이 없어요."
-                description="첫 CASH 충전 기록이 여기에 표시됩니다."
+                title="아직 충전 기록이 없어요."
+                description="첫 충전 거래가 완료되면 장부에 기록됩니다."
               />
             ) : (
-              <View style={styles.historyCard}>
+              <View style={styles.historyList}>
                 {purchases.map((purchase, index) => {
-                  const paid = purchase.status === 'PAID'
-                  const pending = purchase.status === 'PENDING'
-                  const label = paid ? '충전 완료' : pending ? '결제 확인 중' : '처리 종료'
+                  const presentation = getPurchasePresentation(purchase.status)
                   return (
-                    <View key={purchase.id} style={[styles.historyRow, index > 0 && styles.historyRowBorder]}>
-                      <View style={[styles.historyIcon, paid && styles.historyIconPaid]}>
-                        <Ionicons
-                          name={paid ? 'checkmark' : pending ? 'time-outline' : 'remove'}
-                          size={18}
-                          color={paid ? '#15803D' : '#64748B'}
-                        />
+                    <ParchmentCard key={purchase.id} style={styles.historyCard}>
+                      <View style={styles.historyIndex}>
+                        <Text style={styles.historyIndexText}>{String(index + 1).padStart(2, '0')}</Text>
+                      </View>
+                      <View style={[styles.historyIcon, { backgroundColor: presentation.tone === 'success' ? colors.successSoft : presentation.tone === 'warning' ? colors.warningSoft : colors.bankSoft }]}>
+                        <Ionicons name={presentation.icon} size={21} color={presentation.tone === 'success' ? colors.success : presentation.tone === 'warning' ? colors.warning : colors.bank} />
                       </View>
                       <View style={styles.historyCopy}>
-                        <Text style={styles.historyTitle}>{purchase.cash_granted.toLocaleString()} CASH</Text>
+                        <View style={styles.historyTitleRow}>
+                          <Text style={styles.historyTitle}>{purchase.cash_granted.toLocaleString()} CASH</Text>
+                          {billingMode === 'mock' && purchase.provider === 'MOCK' ? (
+                            <StatusChip label="개발 Mock" tone="warning" />
+                          ) : null}
+                        </View>
+                        <Text style={styles.historyDescription}>{presentation.description}</Text>
                         <Text style={styles.historyDate}>
                           {purchase.created_at ? new Date(purchase.created_at).toLocaleDateString('ko-KR') : '날짜 정보 없음'}
                         </Text>
                       </View>
-                      {purchase.provider === 'MOCK' ? (
-                        <View style={styles.historyProviderChip}>
-                          <Text style={styles.historyProviderText}>MOCK</Text>
-                        </View>
-                      ) : null}
-                      <View style={[styles.statusChip, paid && styles.statusChipPaid]}>
-                        <Text style={[styles.statusText, paid && styles.statusTextPaid]}>{label}</Text>
-                      </View>
-                    </View>
+                      <StatusChip label={presentation.label} tone={presentation.tone} />
+                    </ParchmentCard>
                   )
                 })}
               </View>
             )}
           </View>
 
-          <Text style={styles.footnote}>
-            {billingMode === 'mock'
-              ? '개발 전용 서버가 DB 상품을 확인한 뒤 Mock 구매와 CASH 지급을 함께 처리합니다.'
-              : '결제 완료와 CASH 지급은 서버에서 Google Play 구매를 확인한 뒤 처리됩니다.'}
-          </Text>
+          <ParchmentCard style={styles.policyCard}>
+            <Ionicons name="shield-checkmark-outline" size={21} color={colors.bank} />
+            <Text style={styles.policyText}>
+              {billingMode === 'mock'
+                ? '개발 전용 서버가 등록된 상품과 지급 금액을 확인한 뒤 충전합니다.'
+                : '결제 결과와 지급 금액은 서버에서 확인하며, 필요한 마무리 작업은 자동으로 재시도됩니다.'}
+            </Text>
+          </ParchmentCard>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -258,54 +356,112 @@ export default function BankScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F6F7FB' },
+  safeArea: { flex: 1, backgroundColor: colors.background },
   scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 34 },
-  content: { width: '100%', maxWidth: 640, alignSelf: 'center', gap: 22 },
-  mockBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: '#FFEDD5' },
-  mockBadgeText: { color: '#9A3412', fontSize: 11, fontWeight: '800' },
-  feedback: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 16, backgroundColor: '#EFF6FF' },
-  feedbackSuccess: { backgroundColor: '#F0FDF4' },
-  feedbackError: { backgroundColor: '#FEF2F2' },
-  feedbackText: { flex: 1, color: '#1D4ED8', fontSize: 13, lineHeight: 19, fontWeight: '600' },
-  feedbackTextSuccess: { color: '#166534' },
-  feedbackTextError: { color: '#991B1B' },
-  noticeCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 18, backgroundColor: '#FFFFFF' },
-  noticeIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EFF6FF' },
-  noticeCopy: { flex: 1 },
-  noticeTitle: { color: '#1E293B', fontSize: 14, fontWeight: '700' },
-  noticeDescription: { color: '#64748B', fontSize: 12, lineHeight: 18, marginTop: 3 },
-  section: { gap: 11 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  sectionTitle: { color: '#334155', fontSize: 16, fontWeight: '800' },
-  sectionSubtitle: { color: '#94A3B8', fontSize: 11, marginTop: 3 },
-  productList: { gap: 11 },
-  productCard: { padding: 18, borderRadius: 21, backgroundColor: '#FFFFFF' },
-  productTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  cashIcon: { width: 46, height: 46, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFBEB' },
+  scrollContent: {
+    paddingHorizontal: layout.screenHorizontalPadding,
+    paddingTop: spacing.md,
+    paddingBottom: spacing['3xl'],
+  },
+  content: { width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', gap: spacing.xl },
+  hero: {
+    padding: spacing.lg,
+    borderRadius: radius['2xl'],
+    borderWidth: 1,
+    borderColor: colors.accentGold,
+    backgroundColor: colors.bank,
+    overflow: 'hidden',
+    ...shadows.raised,
+  },
+  heroMark: { position: 'absolute', right: -5, bottom: -4, opacity: 0.14 },
+  heroTopRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  heroTitleRow: { marginTop: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  heroEmblem: {
+    width: 56,
+    height: 64,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 253, 247, 0.11)',
+    borderWidth: 1,
+    borderColor: colors.accentGold,
+  },
+  heroCopy: { flex: 1 },
+  heroEyebrow: { ...typography.caption, color: colors.accentGold, fontWeight: '800' },
+  heroTitle: { ...typography.screenTitle, marginTop: 1, color: colors.onPrimary },
+  heroDescription: { ...typography.body, marginTop: spacing.xxs, color: colors.onPrimary, opacity: 0.88 },
+  heroTrustRow: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255, 253, 247, 0.3)',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroTrustItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xxs },
+  heroTrustText: { color: colors.onPrimary, fontSize: 10, lineHeight: 15, fontWeight: '700' },
+  heroTrustDivider: { width: StyleSheet.hairlineWidth, height: 22, backgroundColor: 'rgba(255, 253, 247, 0.3)' },
+  mockRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs },
+  mockDescription: { ...typography.caption, flex: 1, minWidth: 180, color: colors.textSecondary },
+  section: { gap: spacing.sm },
+  balanceLedger: { gap: spacing.md },
+  ledgerTopRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  ledgerEyebrow: { color: colors.bank, fontSize: 9, lineHeight: 12, fontWeight: '800', letterSpacing: 1.2 },
+  ledgerTitle: { ...typography.cardTitle, marginTop: 2, color: colors.textPrimary },
+  balanceRows: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  balanceRow: { minHeight: 70, padding: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  balanceDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: spacing.sm, backgroundColor: colors.border },
+  balanceIcon: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  attendanceIcon: { backgroundColor: colors.goldSoft },
+  cashIcon: { backgroundColor: colors.bankSoft },
+  balanceCopy: { flex: 1 },
+  balanceTitle: { ...typography.cardTitle, color: colors.textPrimary },
+  balanceEnum: { color: colors.textSecondary, fontSize: 9, lineHeight: 13, fontWeight: '800', letterSpacing: 0.8 },
+  balanceAmount: { ...typography.coin, color: colors.textPrimary },
+  balanceFootnote: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
+  feedback: { padding: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  feedbackText: { ...typography.body, flex: 1, fontWeight: '600' },
+  noticeCard: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface },
+  noticeIcon: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bankSoft },
+  noticeCopy: { flex: 1, minWidth: 150 },
+  noticeTitle: { ...typography.cardTitle, color: colors.textPrimary },
+  noticeDescription: { ...typography.caption, marginTop: 2, color: colors.textSecondary },
+  reconnectButton: { minHeight: 40, borderColor: colors.bank },
+  productList: { gap: spacing.sm },
+  productCard: { backgroundColor: colors.surface, borderColor: colors.bank },
+  productHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  productEmblem: { width: 48, height: 48, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bank, borderWidth: 1, borderColor: colors.accentGold },
   productCopy: { flex: 1 },
-  productTitle: { color: '#64748B', fontSize: 12, fontWeight: '600' },
-  cashAmount: { color: '#0F172A', fontSize: 19, fontWeight: '800', marginTop: 3 },
-  localizedPrice: { color: '#1E293B', fontSize: 15, fontWeight: '800' },
-  purchaseButton: { height: 46, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2563EB', marginTop: 16 },
-  purchaseButtonDisabled: { backgroundColor: '#CBD5E1' },
-  purchaseButtonPressed: { opacity: 0.88 },
-  purchaseButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  historyRefresh: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, borderRadius: 12, backgroundColor: '#EFF6FF' },
-  historyRefreshText: { color: '#2563EB', fontSize: 11, fontWeight: '700' },
-  historyCard: { paddingHorizontal: 17, borderRadius: 20, backgroundColor: '#FFFFFF' },
-  historyRow: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  historyRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2E8F0' },
-  historyIcon: { width: 36, height: 36, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F5F9' },
-  historyIconPaid: { backgroundColor: '#F0FDF4' },
+  productEyebrow: { ...typography.caption, color: colors.bank, fontSize: 10, lineHeight: 14, fontWeight: '800' },
+  productTitle: { ...typography.cardTitle, marginTop: 1, color: colors.textPrimary },
+  exchangeRow: {
+    marginTop: spacing.md,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    backgroundColor: colors.parchment,
+  },
+  exchangeLabel: { ...typography.caption, marginBottom: spacing.xxs, color: colors.textSecondary, fontWeight: '700' },
+  priceCopy: { alignItems: 'flex-end' },
+  priceLabel: { color: colors.textSecondary, fontSize: 10, lineHeight: 14, fontWeight: '700' },
+  localizedPrice: { ...typography.cardTitle, marginTop: spacing.xxs, color: colors.textPrimary },
+  purchaseButton: { marginTop: spacing.md, backgroundColor: colors.bank },
+  historyList: { gap: spacing.sm },
+  historyCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface },
+  historyIndex: { alignSelf: 'stretch', width: 24, alignItems: 'center', justifyContent: 'center', borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.border },
+  historyIndexText: { color: colors.textSecondary, fontSize: 9, lineHeight: 12, fontWeight: '800' },
+  historyIcon: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   historyCopy: { flex: 1 },
-  historyTitle: { color: '#1E293B', fontSize: 14, fontWeight: '700' },
-  historyDate: { color: '#94A3B8', fontSize: 11, marginTop: 4 },
-  historyProviderChip: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999, backgroundColor: '#FFEDD5' },
-  historyProviderText: { color: '#9A3412', fontSize: 9, fontWeight: '800' },
-  statusChip: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999, backgroundColor: '#F1F5F9' },
-  statusChipPaid: { backgroundColor: '#DCFCE7' },
-  statusText: { color: '#64748B', fontSize: 10, fontWeight: '700' },
-  statusTextPaid: { color: '#15803D' },
-  footnote: { color: '#94A3B8', fontSize: 11, lineHeight: 17, textAlign: 'center', paddingHorizontal: 16 },
+  historyTitleRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs },
+  historyTitle: { ...typography.cardTitle, color: colors.textPrimary },
+  historyDescription: { ...typography.caption, marginTop: 2, color: colors.textSecondary },
+  historyDate: { color: colors.textSecondary, fontSize: 10, lineHeight: 14, marginTop: spacing.xxs },
+  policyCard: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, backgroundColor: colors.bankSoft },
+  policyText: { ...typography.caption, flex: 1, color: colors.textPrimary },
 })
