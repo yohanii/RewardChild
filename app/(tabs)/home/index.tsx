@@ -45,15 +45,21 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <BalanceCard
-            label="현재 보유 재화"
-            amount={balance.total}
-            caption={isParent ? '퀘스트에 사용할 수 있는 전체 재화예요.' : '완료한 퀘스트 보상이 반영된 금액이에요.'}
-            parts={isParent ? [
-              { label: '출석 · ATTENDANCE', amount: balance.attendance },
-              { label: '구매 · CASH', amount: balance.cash },
-            ] : undefined}
-          />
+          <Pressable
+            onPress={() => router.push('/balance' as Href)}
+            accessibilityRole="button"
+            accessibilityLabel="재화 거래 내역 열기"
+          >
+            <BalanceCard
+              label="현재 보유 재화"
+              amount={balance.total}
+              caption={isParent ? '퀘스트에 사용할 수 있는 전체 재화예요.' : '완료한 퀘스트 보상이 반영된 금액이에요.'}
+              parts={[
+                { label: '출석 · ATTENDANCE', amount: balance.attendance },
+                { label: '구매 · CASH', amount: balance.cash },
+              ]}
+            />
+          </Pressable>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>지금 할 일</Text>
