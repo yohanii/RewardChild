@@ -1,62 +1,40 @@
-import {
-  CoinBadge,
-  FantasyCard,
-  type FantasyIconName,
-  ParchmentCard,
-  PrimaryButton,
-  SecondaryButton,
-  SectionHeader,
-  StatusChip,
-} from '@/src/components/common/FantasyPrimitives'
+import { CoinBadge, ParchmentCard, SecondaryButton, SectionHeader, StatusChip } from '@/src/components/common/FantasyPrimitives'
 import { ScreenLoading, StateCard } from '@/src/components/common/ScreenState'
 import { useHomeScreen } from '@/src/hooks/useHomeScreen'
 import { colors, layout, radius, shadows, spacing, typography } from '@/src/theme/tokens'
 import { Ionicons } from '@expo/vector-icons'
 import { router, type Href } from 'expo-router'
 import React from 'react'
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image, type ImageSourcePropType, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-const CHILD_HERO_IMAGE = require('../../../assets/ui/characters/child_hero.png')
-const PARENT_HERO_IMAGE = require('../../../assets/ui/characters/parent_merchant.png')
+const CHILD_CHARACTER = require('../../../assets/ui/characters/child_hero.png')
+const PARENT_CHARACTER = require('../../../assets/ui/characters/parent_merchant.png')
+const QUEST_BOARD = require('../../../assets/ui/decorations/quest_board.png')
+const SHOP_COUNTER = require('../../../assets/ui/decorations/shop_counter.png')
+const BANK_COUNTER = require('../../../assets/ui/decorations/bank_counter.png')
+const QUEST_SCROLL = require('../../../assets/ui/decorations/quest_scroll.png')
 
 type LocationCardProps = {
-  icon: FantasyIconName
-  eyebrow: string
+  image: ImageSourcePropType
   title: string
   description: string
-  accent: string
-  iconBackground: string
   onPress: () => void
 }
 
-function LocationCard({
-  icon,
-  eyebrow,
-  title,
-  description,
-  accent,
-  iconBackground,
-  onPress,
-}: LocationCardProps) {
+function LocationCard({ image, title, description, onPress }: LocationCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${title}로 이동`}
       onPress={onPress}
-      style={({ pressed }) => [styles.locationPressable, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.locationCard, pressed && styles.pressed]}
     >
-      <FantasyCard style={[styles.locationCard, { borderLeftColor: accent }]}>
-        <View style={[styles.locationIcon, { backgroundColor: iconBackground }]}>
-          <Ionicons name={icon} size={23} color={accent} />
-        </View>
-        <View style={styles.locationCopy}>
-          <Text style={[styles.locationEyebrow, { color: accent }]}>{eyebrow}</Text>
-          <Text style={styles.locationTitle}>{title}</Text>
-          <Text style={styles.locationDescription}>{description}</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={19} color={colors.textSecondary} />
-      </FantasyCard>
+      <View style={styles.locationImageStage}>
+        <Image source={image} style={styles.locationImage} resizeMode="contain" />
+      </View>
+      <Text style={styles.locationTitle}>{title}</Text>
+      <Text style={styles.locationDescription} numberOfLines={3}>{description}</Text>
     </Pressable>
   )
 }
@@ -64,9 +42,7 @@ function LocationCard({
 export default function HomeScreen() {
   const { profile, balance, connection, actionableQuestCount, loading, refreshing, error, refresh, retry } = useHomeScreen()
 
-  if (loading && !profile) {
-    return <ScreenLoading label="길드 소식을 불러오는 중..." />
-  }
+  if (loading && !profile) return <ScreenLoading label="길드 소식을 불러오는 중..." />
   if (!profile) {
     return (
       <StateCard
@@ -81,23 +57,22 @@ export default function HomeScreen() {
   }
 
   const isParent = profile.role === 'PARENT'
-  const heroCharacter = isParent ? PARENT_HERO_IMAGE : CHILD_HERO_IMAGE
+  const character = isParent ? PARENT_CHARACTER : CHILD_CHARACTER
   const roleAccent = isParent ? colors.parent : colors.child
   const roleSoft = isParent ? colors.parentSoft : colors.childSoft
-  const roleTitle = isParent ? '길드 상인 · 부모' : '리트리버 용사 · 자녀'
-  const heroCopy = isParent
-    ? '오늘도 길드를 꼼꼼히 돌볼 시간이에요.'
-    : '새로운 의뢰와 모험이 기다리고 있어요!'
-  const dailyMessage = isParent
-    ? '좋은 경험은 언제나 따뜻한 관심과 꼼꼼한 준비에서 시작돼요.'
-    : '작은 도전이 멋진 용사를 만들어요. 오늘도 힘차게 출발!'
-  const taskCopy = isParent
-    ? actionableQuestCount > 0
-      ? `완료 보고 ${actionableQuestCount}건이 확인을 기다리고 있어요.`
-      : '대기 중인 완료 보고가 없어요. 새 의뢰를 준비해 보세요.'
-    : actionableQuestCount > 0
-      ? `도전하거나 다시 보고할 의뢰가 ${actionableQuestCount}건 있어요.`
-      : '지금 바로 확인할 의뢰가 없어요. 다음 모험을 기다려 보세요.'
+  const roleDescription = isParent ? '길드를 돌보는 상인' : '오늘을 모험하는 용사'
+  const dailyMessage = isParent ? '작은 관심이 아이의 큰 변화를 만들어요.' : '작은 도전이 더 멋진 나를 만들어요.'
+  const questTitle = isParent ? '완료 보고 확인' : '오늘의 도전 확인'
+  const questDescription = actionableQuestCount > 0
+    ? isParent
+      ? `${actionableQuestCount}건의 완료 보고를 확인해 주세요.`
+      : `${actionableQuestCount}건의 모험이 기다리고 있어요.`
+    : isParent
+      ? '지금 확인할 완료 보고가 없어요.'
+      : '지금 바로 확인할 퀘스트가 없어요.'
+  const bannerCopy = isParent
+    ? '꼼꼼한 준비가 아이의 멋진 내일을 만들어요.'
+    : '오늘의 작은 도전이 더 큰 모험을 만들어요.'
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -105,14 +80,7 @@ export default function HomeScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={(
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
-            tintColor={roleAccent}
-            colors={[roleAccent]}
-          />
-        )}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={roleAccent} colors={[roleAccent]} />}
       >
         <View style={styles.content}>
           {error ? (
@@ -125,144 +93,125 @@ export default function HomeScreen() {
             />
           ) : null}
 
-          <View style={[styles.hero, { backgroundColor: roleAccent }]}>
-            <View style={styles.heroTopRow}>
-              <StatusChip label={roleTitle} tone={isParent ? 'parent' : 'child'} />
-              <Pressable
-                style={({ pressed }) => [styles.settingsButton, pressed && styles.pressed]}
-                onPress={() => router.push('/settings' as Href)}
-                accessibilityRole="button"
-                accessibilityLabel="설정 열기"
-              >
-                <Ionicons name="settings-outline" size={21} color={colors.onPrimary} />
-              </Pressable>
+          <View style={styles.profileBar}>
+            <View style={[styles.portraitFrame, { borderColor: roleAccent, backgroundColor: roleSoft }]}>
+              <Image
+                source={character}
+                style={styles.portraitImage}
+                resizeMode="contain"
+                accessibilityLabel={isParent ? '검은 고양이 상인 프로필' : '리트리버 용사 프로필'}
+              />
             </View>
-
-            <View style={styles.heroIdentityRow}>
-              <View style={styles.heroCopy}>
-                <Text style={styles.heroEyebrow}>모험가 길드에 오신 걸 환영해요</Text>
-                <Text
-                  style={styles.heroTitle}
-                  numberOfLines={2}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.78}
-                >
-                  {profile.nickname}님
-                </Text>
-                <Text style={styles.heroDescription}>{heroCopy}</Text>
-              </View>
-              <View style={styles.heroCharacterStage}>
-                <View style={styles.heroCharacterHalo} accessibilityElementsHidden />
-                <Image
-                  source={heroCharacter}
-                  style={styles.heroCharacter}
-                  resizeMode="contain"
-                  accessibilityLabel={isParent ? '길드를 관리하는 검은 고양이 상인' : '모험을 준비하는 리트리버 용사'}
-                />
-              </View>
+            <View style={styles.profileCopy}>
+              <Text style={styles.nickname} numberOfLines={1}>{profile.nickname}</Text>
+              <Text style={styles.roleDescription} numberOfLines={1}>{roleDescription}</Text>
             </View>
-
-            <View style={styles.heroBalanceRow}>
-              <Text style={styles.heroBalanceLabel}>보유 금화</Text>
-              <CoinBadge amount={balance.total} />
-            </View>
+            <CoinBadge amount={balance.total} compact />
+            <Pressable
+              style={({ pressed }) => [styles.settingsButton, pressed && styles.pressed]}
+              onPress={() => router.push('/settings' as Href)}
+              accessibilityRole="button"
+              accessibilityLabel="설정 열기"
+              hitSlop={spacing.xxs}
+            >
+              <Ionicons name="settings-outline" size={21} color={colors.textPrimary} />
+            </Pressable>
           </View>
 
           <ParchmentCard style={styles.dailyCard}>
-            <View style={[styles.dailyIcon, { backgroundColor: roleSoft }]}>
-              <Ionicons name="sunny-outline" size={22} color={roleAccent} />
+            <View style={styles.dailyHeading}>
+              <Ionicons name="paw" size={17} color={roleAccent} />
+              <Text style={styles.dailyLabel}>오늘의 한마디</Text>
             </View>
-            <View style={styles.dailyCopy}>
-              <Text style={styles.dailyLabel}>오늘의 길드 한마디</Text>
-              <Text style={styles.dailyMessage}>{dailyMessage}</Text>
+            <Text style={styles.dailyMessage}>“{dailyMessage}”</Text>
+            <View style={styles.parchmentMark} accessibilityElementsHidden>
+              <Ionicons name="compass-outline" size={62} color={colors.primary} />
             </View>
           </ParchmentCard>
 
           <View style={styles.section}>
-            <SectionHeader title="주요 장소" subtitle="마을에서 향할 곳을 골라보세요." />
-            <View style={styles.locationList}>
+            <SectionHeader title="주요 장소" subtitle="오늘 향할 곳을 골라보세요." />
+            <View style={styles.locationRow}>
               <LocationCard
-                icon="document-text-outline"
-                eyebrow="용병술집"
-                title="의뢰 게시판"
-                description={isParent ? '새 의뢰를 맡기고 완료 보고를 관리해요.' : '새 의뢰를 확인하고 모험을 시작해요.'}
-                accent={colors.primary}
-                iconBackground={colors.primarySoft}
+                image={QUEST_BOARD}
+                title="Quest"
+                description={isParent ? '의뢰·완료 관리' : '새로운 도전 확인'}
                 onPress={() => router.push('/quests')}
               />
               <LocationCard
-                icon="storefront-outline"
-                eyebrow="마을 상점"
-                title="보상 상점"
-                description={isParent ? '아이에게 제공할 경험과 보상을 관리해요.' : '모은 금화로 받고 싶은 보상을 골라요.'}
-                accent={colors.parent}
-                iconBackground={colors.parentSoft}
+                image={SHOP_COUNTER}
+                title="Shop"
+                description={isParent ? '보상 관리' : '모은 금화로 보상 선택'}
                 onPress={() => router.push('/shop')}
               />
               {isParent ? (
-                <LocationCard
-                  icon="library-outline"
-                  eyebrow="금화 보관소"
-                  title="마을 은행"
-                  description="금화를 충전하고 은행 장부를 확인해요."
-                  accent={colors.bank}
-                  iconBackground={colors.bankSoft}
-                  onPress={() => router.push('/bank')}
-                />
+                <LocationCard image={BANK_COUNTER} title="Bank" description="충전·장부 확인" onPress={() => router.push('/bank')} />
               ) : null}
             </View>
           </View>
 
           <View style={styles.section}>
-            <SectionHeader title="오늘 확인할 내용" subtitle="지금 처리할 수 있는 의뢰만 모았어요." />
-            <FantasyCard style={[styles.questSummary, { borderTopColor: roleAccent }]} raised>
-              <View style={[styles.questCountBadge, { backgroundColor: roleSoft }]}>
-                <Text style={[styles.questCount, { color: roleAccent }]}>{actionableQuestCount}</Text>
-                <Text style={[styles.questCountUnit, { color: roleAccent }]}>건</Text>
+            <SectionHeader title="오늘의 퀘스트" actionLabel="전체보기" onAction={() => router.push('/quests')} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="오늘의 퀘스트 전체보기"
+              onPress={() => router.push('/quests')}
+              style={({ pressed }) => [styles.questCard, pressed && styles.pressed]}
+            >
+              <View style={[styles.questImageStage, { backgroundColor: roleSoft }]}>
+                <Image source={QUEST_SCROLL} style={styles.questImage} resizeMode="contain" />
               </View>
-              <Text style={styles.questSummaryTitle}>{isParent ? '도착한 완료 보고' : '오늘의 모험 후보'}</Text>
-              <Text style={styles.questSummaryDescription}>{taskCopy}</Text>
-              <PrimaryButton
-                label={isParent ? '의뢰 관리하기' : '의뢰 확인하기'}
-                onPress={() => router.push('/quests')}
-                leading={<Ionicons name="document-text-outline" size={18} color={colors.onPrimary} />}
-                style={[styles.questButton, { backgroundColor: roleAccent }]}
-              />
-            </FantasyCard>
+              <View style={styles.questCopy}>
+                <View style={styles.questTitleRow}>
+                  <Text style={styles.questTitle} numberOfLines={1}>{questTitle}</Text>
+                  <View style={[styles.countBadge, { backgroundColor: roleAccent }]}>
+                    <Text style={styles.countText}>{actionableQuestCount}건</Text>
+                  </View>
+                </View>
+                <Text style={styles.questDescription} numberOfLines={2}>{questDescription}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+            </Pressable>
           </View>
 
-          <View style={styles.section}>
-            <SectionHeader title="우리 길드" subtitle="현재 연결된 가족 정보예요." />
-            <FantasyCard style={styles.familyCard}>
-              <View style={[styles.familyIcon, { backgroundColor: roleSoft }]}>
-                <Ionicons name="people-outline" size={23} color={roleAccent} />
+          <View style={[styles.worldBanner, { borderColor: roleAccent }]}>
+            <View style={styles.bannerGlow} accessibilityElementsHidden />
+            <View style={styles.bannerCopy}>
+              <Text style={styles.bannerEyebrow}>{isParent ? 'MERCHANT GUILD' : 'ADVENTURE AWAITS'}</Text>
+              <Text style={styles.bannerMessage}>{bannerCopy}</Text>
+            </View>
+            <Image source={character} style={styles.bannerCharacter} resizeMode="contain" />
+          </View>
+
+          <View style={styles.secondarySection}>
+            <SectionHeader title="길드 정보" subtitle="가족 연결과 재화 상세 정보예요." />
+            <View style={styles.familyCard}>
+              <View style={[styles.secondaryIcon, { backgroundColor: roleSoft }]}>
+                <Ionicons name="people-outline" size={22} color={roleAccent} />
               </View>
               <View style={styles.familyCopy}>
-                <Text style={styles.familyLabel}>{connection?.label ?? '가족 연결'}</Text>
-                <Text style={styles.familyName}>{connection?.name ?? '연결 정보를 확인해 주세요'}</Text>
+                <Text style={styles.secondaryLabel}>{connection?.label ?? '가족 연결'}</Text>
+                <Text style={styles.familyName} numberOfLines={2}>{connection?.name ?? '연결 정보를 확인해 주세요'}</Text>
               </View>
               <StatusChip label={connection ? '연결됨' : '확인 필요'} tone={connection ? 'success' : 'warning'} />
-            </FantasyCard>
-          </View>
+            </View>
 
-          <View style={styles.section}>
-            <SectionHeader title="금화 장부" subtitle="재화 구성과 거래 기록을 확인해요." />
             <ParchmentCard style={styles.ledgerCard}>
               <View style={styles.ledgerHeader}>
-                <View style={styles.ledgerCopy}>
-                  <Text style={styles.ledgerLabel}>현재 보유 재화</Text>
-                  <Text style={styles.ledgerCaption}>{isParent ? '의뢰에 사용할 수 있는 전체 재화' : '모험으로 모은 전체 재화'}</Text>
+                <View>
+                  <Text style={styles.ledgerTitle}>보유 금화 상세</Text>
+                  <Text style={styles.secondaryLabel}>재화 구성과 거래 기록</Text>
                 </View>
                 <CoinBadge amount={balance.total} compact />
               </View>
               <View style={styles.ledgerParts}>
                 <View style={styles.ledgerPart}>
-                  <Text style={styles.ledgerPartLabel}>출석 · ATTENDANCE</Text>
+                  <Text style={styles.ledgerPartLabel}>ATTENDANCE</Text>
                   <Text style={styles.ledgerPartAmount}>{balance.attendance.toLocaleString()}</Text>
                 </View>
                 <View style={styles.ledgerDivider} />
                 <View style={styles.ledgerPart}>
-                  <Text style={styles.ledgerPartLabel}>구매 · CASH</Text>
+                  <Text style={styles.ledgerPartLabel}>CASH</Text>
                   <Text style={styles.ledgerPartAmount}>{balance.cash.toLocaleString()}</Text>
                 </View>
               </View>
@@ -283,165 +232,118 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   scrollView: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: layout.screenHorizontalPadding,
-    paddingTop: spacing.md,
-    paddingBottom: spacing['3xl'],
+  scrollContent: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing['3xl'] },
+  content: { width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center', gap: spacing.md },
+  pressed: { opacity: 0.8, transform: [{ scale: 0.985 }] },
+  profileBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  portraitFrame: { width: 54, height: 54, borderRadius: 27, borderWidth: 2, overflow: 'hidden' },
+  portraitImage: { position: 'absolute', width: 88, height: 106, left: -18, top: -8 },
+  profileCopy: { flex: 1, minWidth: 0 },
+  nickname: { ...typography.cardTitle, color: colors.textPrimary },
+  roleDescription: { ...typography.caption, color: colors.textSecondary },
+  settingsButton: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
-  content: {
-    width: '100%',
-    maxWidth: layout.maxContentWidth,
-    alignSelf: 'center',
-    gap: spacing.xl,
-  },
-  hero: {
-    padding: spacing.md,
-    borderRadius: radius['2xl'],
-    borderWidth: 1,
+  dailyCard: { minHeight: 98, paddingVertical: spacing.md, overflow: 'hidden', justifyContent: 'center', ...shadows.card },
+  dailyHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  dailyLabel: { ...typography.caption, color: colors.textSecondary, fontWeight: '800' },
+  dailyMessage: { maxWidth: '84%', marginTop: spacing.xs, color: colors.textPrimary, fontSize: 17, lineHeight: 24, fontWeight: '800' },
+  parchmentMark: { position: 'absolute', right: 12, top: 17, opacity: 0.1 },
+  section: { gap: spacing.xs },
+  locationRow: { flexDirection: 'row', gap: spacing.xs },
+  locationCard: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 132,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 2,
     borderColor: colors.accentGold,
+    backgroundColor: colors.wood,
+    ...shadows.card,
+  },
+  locationImageStage: { width: 54, height: 48, alignItems: 'center', justifyContent: 'center' },
+  locationImage: { width: 54, height: 54 },
+  locationTitle: { marginTop: spacing.xxs, color: colors.onPrimary, fontSize: 17, lineHeight: 21, fontWeight: '800' },
+  locationDescription: { marginTop: spacing.xxs, color: '#EAD9C2', fontSize: 10, lineHeight: 14, fontWeight: '600', textAlign: 'center' },
+  questCard: {
+    minHeight: 82,
+    padding: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    ...shadows.card,
+  },
+  questImageStage: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
+  questImage: { width: 47, height: 47 },
+  questCopy: { flex: 1, minWidth: 0 },
+  questTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  questTitle: { ...typography.cardTitle, flex: 1, color: colors.textPrimary },
+  questDescription: { ...typography.caption, marginTop: 2, color: colors.textSecondary },
+  countBadge: { paddingHorizontal: spacing.xs, paddingVertical: 3, borderRadius: radius.pill },
+  countText: { color: colors.onPrimary, fontSize: 11, lineHeight: 15, fontWeight: '800' },
+  worldBanner: {
+    height: 126,
+    borderRadius: radius.xl,
+    borderWidth: 2,
     overflow: 'hidden',
+    backgroundColor: colors.wood,
+    position: 'relative',
+    justifyContent: 'center',
     ...shadows.raised,
   },
-  heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  settingsButton: {
-    width: layout.minTouchTarget,
-    height: layout.minTouchTarget,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 253, 247, 0.16)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255, 253, 247, 0.45)',
-  },
-  pressed: { opacity: 0.78 },
-  heroIdentityRow: {
-    height: 156,
-    marginTop: spacing.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  heroCopy: { flex: 1, minWidth: 0, justifyContent: 'center' },
-  heroEyebrow: { ...typography.caption, color: colors.onPrimary, opacity: 0.82 },
-  heroTitle: { ...typography.screenTitle, marginTop: spacing.xxs, color: colors.onPrimary },
-  heroDescription: { ...typography.body, marginTop: spacing.xs, color: colors.onPrimary, opacity: 0.9 },
-  heroCharacterStage: {
-    width: '45%',
-    height: 156,
-    flexShrink: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  heroCharacterHalo: {
+  bannerGlow: {
     position: 'absolute',
-    right: 4,
-    bottom: spacing.sm,
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    backgroundColor: 'rgba(255, 238, 184, 0.15)',
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    right: -36,
+    top: -54,
+    backgroundColor: 'rgba(199, 144, 47, 0.2)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 238, 184, 0.32)',
+    borderColor: 'rgba(255, 238, 184, 0.2)',
   },
-  heroCharacter: { width: '100%', height: '100%', zIndex: 1 },
-  heroBalanceRow: {
-    marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255, 253, 247, 0.35)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  heroBalanceLabel: { ...typography.button, color: colors.onPrimary },
-  dailyCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  dailyIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dailyCopy: { flex: 1 },
-  dailyLabel: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
-  dailyMessage: { ...typography.body, marginTop: spacing.xxs, color: colors.textPrimary, fontWeight: '600' },
-  section: { gap: spacing.sm },
-  locationList: { gap: spacing.sm },
-  locationPressable: { borderRadius: radius.xl },
-  locationCard: {
-    minHeight: 104,
-    padding: spacing.md,
-    borderLeftWidth: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-  },
-  locationIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  locationCopy: { flex: 1 },
-  locationEyebrow: { ...typography.caption, fontWeight: '800' },
-  locationTitle: { ...typography.cardTitle, marginTop: 1, color: colors.textPrimary },
-  locationDescription: { ...typography.caption, marginTop: spacing.xxs, color: colors.textSecondary },
-  questSummary: {
-    alignItems: 'center',
-    borderTopWidth: 4,
-    backgroundColor: colors.surface,
-  },
-  questCountBadge: {
-    minWidth: 78,
-    height: 60,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.xl,
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'center',
-    gap: spacing.xxs,
-  },
-  questCount: { ...typography.coin, fontSize: 30, lineHeight: 36 },
-  questCountUnit: { ...typography.caption, fontWeight: '800' },
-  questSummaryTitle: { ...typography.cardTitle, marginTop: spacing.sm, color: colors.textPrimary },
-  questSummaryDescription: { ...typography.body, marginTop: spacing.xxs, color: colors.textSecondary, textAlign: 'center' },
-  questButton: { alignSelf: 'stretch', marginTop: spacing.md },
+  bannerCopy: { width: '62%', paddingLeft: spacing.md, zIndex: 1 },
+  bannerEyebrow: { color: colors.accentGold, fontSize: 10, lineHeight: 14, fontWeight: '900', letterSpacing: 1.2 },
+  bannerMessage: { marginTop: spacing.xs, color: colors.onPrimary, fontSize: 16, lineHeight: 23, fontWeight: '800' },
+  bannerCharacter: { position: 'absolute', width: 140, height: 168, right: -5, bottom: -54 },
+  secondarySection: { gap: spacing.sm, marginTop: spacing.xs },
   familyCard: {
+    minHeight: 76,
+    padding: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surface,
+    ...shadows.card,
   },
-  familyIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  familyCopy: { flex: 1 },
-  familyLabel: { ...typography.caption, color: colors.textSecondary },
-  familyName: { ...typography.cardTitle, marginTop: 2, color: colors.textPrimary },
-  ledgerCard: { gap: spacing.md },
+  secondaryIcon: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  familyCopy: { flex: 1, minWidth: 0 },
+  secondaryLabel: { ...typography.caption, color: colors.textSecondary },
+  familyName: { ...typography.cardTitle, marginTop: 1, color: colors.textPrimary },
+  ledgerCard: { gap: spacing.sm },
   ledgerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  ledgerCopy: { flex: 1 },
-  ledgerLabel: { ...typography.cardTitle, color: colors.textPrimary },
-  ledgerCaption: { ...typography.caption, marginTop: spacing.xxs, color: colors.textSecondary },
-  ledgerParts: {
-    paddingVertical: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
+  ledgerTitle: { ...typography.cardTitle, color: colors.textPrimary },
+  ledgerParts: { paddingVertical: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, flexDirection: 'row' },
   ledgerPart: { flex: 1, paddingHorizontal: spacing.xs },
-  ledgerPartLabel: { color: colors.textSecondary, fontSize: 10, lineHeight: 15, fontWeight: '700' },
-  ledgerPartAmount: { ...typography.coin, marginTop: spacing.xxs, color: colors.textPrimary, fontSize: 19, lineHeight: 25 },
+  ledgerPartLabel: { color: colors.textSecondary, fontSize: 10, lineHeight: 14, fontWeight: '700' },
+  ledgerPartAmount: { color: colors.textPrimary, fontSize: 18, lineHeight: 24, fontWeight: '800' },
   ledgerDivider: { width: StyleSheet.hairlineWidth, backgroundColor: colors.border },
   ledgerButton: { alignSelf: 'stretch', backgroundColor: colors.surface },
 })
