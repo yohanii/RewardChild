@@ -1,5 +1,6 @@
 import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { colors, radius, spacing, typography } from '@/src/theme/tokens'
 
 type Props = {
   title: string
@@ -17,7 +18,12 @@ export function ScreenHeader({ title, subtitle, actionLabel, onAction }: Props) 
       </View>
 
       {actionLabel && onAction ? (
-        <Pressable style={styles.action} onPress={onAction}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
+          style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
+          onPress={onAction}
+        >
           <Text style={styles.actionText}>{actionLabel}</Text>
         </Pressable>
       ) : null}
@@ -30,34 +36,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 16,
+    gap: spacing.md,
   },
   copy: {
     flex: 1,
   },
   title: {
-    color: '#0F172A',
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.6,
+    ...typography.screenTitle,
+    color: colors.textPrimary,
   },
   subtitle: {
-    marginTop: 5,
-    color: '#64748B',
-    fontSize: 13,
-    lineHeight: 19,
+    ...typography.body,
+    marginTop: spacing.xxs,
+    color: colors.textSecondary,
   },
   action: {
     minHeight: 44,
-    paddingHorizontal: 16,
-    borderRadius: 15,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
   },
+  actionPressed: { opacity: 0.84 },
   actionText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+    ...typography.button,
+    color: colors.onPrimary,
   },
 })
