@@ -45,6 +45,12 @@ UI → hook/service → Supabase
 
 화면 컴포넌트에 복잡한 비즈니스 로직을 직접 추가하지 않는다.
 
+`docs/solutions/`에는 과거 문제 해결책이 카테고리별로 저장되며 YAML frontmatter(`module`, `tags`, `problem_type`)로 검색할 수 있어 관련 영역 구현·디버깅 시 참고할 수 있다.
+
+After a solved, verified problem, offer once to invoke the `ce-compound` skill at the completion checkpoint only when the work produced durable project reasoning that is not readily recoverable from the final code, tests, types, comments, or existing documentation, and losing it would plausibly cause recurrence, material risk, or substantial rediscovery. Apply this counterfactual: if the learning document disappeared, would a future engineer reading the final implementation still be likely to repeat the mistake or redo substantial investigation? If not, do not offer. Completion, effort, and diff size alone are not enough. Offer at the checkpoint so a qualifying learning can ship in the PR that produced it, and only where the repository treats captured learnings as tracked, committed knowledge.
+
+Write every report, summary, or handoff to the user through the `ce-noslop` skill. This applies when you are the top-level agent writing to the user, not when you are a subagent reporting to its caller. Do not apply it to code, config, verbatim quotes, or text the user asked to post as written.
+
 ## 작업 절차
 
 1. 관련 파일과 기존 구현을 확인한다.
